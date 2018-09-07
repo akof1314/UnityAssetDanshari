@@ -11,4 +11,12 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 0aed87558357b5d49a95b05d3135a2a4, type: 3}
   m_Name: AssetDanshariSetting
   m_EditorClassIdentifier: 
-  m_AssetReferenceInfos: []
+  m_AssetReferenceInfos:
+  - title: "\u754C\u9762"
+    referenceFolder: '"Assets/Simple UI/Samples"'
+    assetFolder: '"Assets/Simple UI/PNG"'
+    assetCommonFolder: '"Assets/Simple UI/PNG/Common"'
+  - title: "\u7279\u6548"
+    referenceFolder: 
+    assetFolder: 
+    assetCommonFolder: 

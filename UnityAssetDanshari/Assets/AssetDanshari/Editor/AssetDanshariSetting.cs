@@ -12,8 +12,9 @@ namespace AssetDanshari
         public class AssetReferenceInfo
         {
             public string title;
-            public string assetFolder;
             public string referenceFolder;
+            public string assetFolder;
+            public string assetCommonFolder;
         }
 
         [SerializeField]

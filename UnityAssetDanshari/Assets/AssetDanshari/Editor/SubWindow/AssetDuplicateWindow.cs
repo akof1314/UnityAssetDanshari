@@ -8,10 +8,11 @@ namespace AssetDanshari
 {
     public class AssetDuplicateWindow : EditorWindow
     {
-        public static void CheckPaths(string[] paths)
+        public static void CheckPaths(string[] refPaths, string[] paths, string[] commonPaths)
         {
             var window = GetWindow<AssetDuplicateWindow>();
-            window.SetCheckPaths(paths);
+            window.Focus();
+            window.SetCheckPaths(refPaths, paths, commonPaths);
         }
 
         private SearchField m_SearchField;
@@ -35,10 +36,25 @@ namespace AssetDanshari
 
         private void OnGUI()
         {
-            EditorGUILayout.BeginHorizontal(EditorStyles.toolbar);
-            m_TreeView.searchString = m_SearchField.OnToolbarGUI(m_TreeView.searchString);
-            EditorGUILayout.EndHorizontal();
-            m_TreeView.OnGUI(GUILayoutUtility.GetRect(0, 100000, 0, 100000));
+            if (m_TreeModel.data != null)
+            {
+                EditorGUILayout.BeginHorizontal(EditorStyles.toolbar);
+                if (GUILayout.Button(AssetDanshariStyle.Get().expandAll, EditorStyles.toolbarButton, GUILayout.Width(60f)))
+                {
+                    m_TreeView.ExpandAll();
+                }
+                if (GUILayout.Button(AssetDanshariStyle.Get().collapseAll, EditorStyles.toolbarButton, GUILayout.Width(60f)))
+                {
+                    m_TreeView.CollapseAll();
+                }
+                m_TreeView.searchString = m_SearchField.OnToolbarGUI(m_TreeView.searchString);
+                EditorGUILayout.EndHorizontal();
+                m_TreeView.OnGUI(GUILayoutUtility.GetRect(0, 100000, 0, 100000));
+            }
+            else
+            {
+                ShowNotification(AssetDanshariStyle.Get().duplicateNothing);
+            }
         }
 
         private void Init()
@@ -73,24 +89,59 @@ namespace AssetDanshari
 
         private MultiColumnHeaderState CreateMultiColumnHeader()
         {
-            var columns = new MultiColumnHeaderState.Column[3];
-            for (int i = 0; i < columns.Length; i++)
+            var columns = new[]
             {
-                columns[i] = new MultiColumnHeaderState.Column
+                new MultiColumnHeaderState.Column
                 {
-                    headerContent = new GUIContent((i).ToString()),
-                    minWidth = 70f,
+                    headerContent = AssetDanshariStyle.Get().duplicateHeaderContent,
+                    headerTextAlignment = TextAlignment.Left,
                     canSort = false,
-                };
-            }
+                    sortingArrowAlignment = TextAlignment.Right,
+                    width = 200,
+                    minWidth = 150,
+                    autoResize = false,
+                    allowToggleVisibility = false
+                },
+                new MultiColumnHeaderState.Column
+                {
+                    headerContent = AssetDanshariStyle.Get().duplicateHeaderContent2,
+                    headerTextAlignment = TextAlignment.Left,
+                    canSort = false,
+                    width = 300,
+                    minWidth = 100,
+                    autoResize = false,
+                    allowToggleVisibility = true
+                },
+                new MultiColumnHeaderState.Column
+                {
+                    headerContent = AssetDanshariStyle.Get().duplicateHeaderContent3,
+                    headerTextAlignment = TextAlignment.Left,
+                    canSort = false,
+                    width = 60,
+                    minWidth = 60,
+                    autoResize = false,
+                    allowToggleVisibility = true
+                },
+                new MultiColumnHeaderState.Column
+                {
+                    headerContent = AssetDanshariStyle.Get().duplicateHeaderContent4,
+                    headerTextAlignment = TextAlignment.Left,
+                    canSort = false,
+                    width = 110,
+                    minWidth = 60,
+                    autoResize = true
+                }
+            };
 
             return new MultiColumnHeaderState(columns);
         }
 
-        private void SetCheckPaths(string[] paths)
+        private void SetCheckPaths(string[] refPaths, string[] paths, string[] commonPaths)
         {
-            m_TreeModel.SetDataPaths(paths);
+            RemoveNotification();
+            m_TreeModel.SetDataPaths(refPaths, paths, commonPaths);
             m_TreeView.Reload();
+            m_TreeView.ExpandAll();
         }
     }
 }
