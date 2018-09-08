@@ -24,6 +24,7 @@ namespace AssetDanshari
             public GUIContent duplicateHeaderContent4 = new GUIContent("创建时间");
             public GUIContent duplicateDelete = EditorGUIUtility.IconContent("AS Badge Delete");
             public GUIContent duplicateContextLocation = new GUIContent("定位");
+            public GUIContent duplicateContextExplorer = new GUIContent("打开所在文件夹");
             public GUIContent duplicateContextUseThis = new GUIContent("仅使用此资源");
             public GUIContent duplicateContextDelOther = new GUIContent("删除其余资源");
             public string duplicateContextMoveComm = "移入公共目录/";

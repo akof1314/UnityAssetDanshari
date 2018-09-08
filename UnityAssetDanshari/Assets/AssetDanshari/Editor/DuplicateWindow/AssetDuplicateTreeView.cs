@@ -7,17 +7,18 @@ using UnityEngine;
 
 namespace AssetDanshari
 {
-    public class AssetTreeView : TreeView
+    public class AssetDuplicateTreeView : TreeView
     {
-        private AssetTreeModel m_Model;
+        private AssetDuplicateTreeModel m_Model;
         private List<TreeViewItem> m_Rows;
 
-        public AssetTreeView(TreeViewState state, MultiColumnHeader multiColumnHeader, AssetTreeModel model) : base(state, multiColumnHeader)
+        public AssetDuplicateTreeView(TreeViewState state, MultiColumnHeader multiColumnHeader, AssetDuplicateTreeModel model) : base(state, multiColumnHeader)
         {
             m_Model = model;
             rowHeight = 20f;
             showAlternatingRowBackgrounds = true;
             showBorder = true;
+            multiColumnHeader.height = 23f;
         }
 
         protected override TreeViewItem BuildRoot()
@@ -30,13 +31,13 @@ namespace AssetDanshari
                 var groups = m_Model.data;
                 foreach (var group in groups)
                 {
-                    var groupItem = new AssetTreeViewItem<IGrouping<string, AssetTreeModel.FileMd5Info>>(id++, -1,
+                    var groupItem = new AssetTreeViewItem<IGrouping<string, AssetDuplicateTreeModel.FileMd5Info>>(id++, -1,
                         String.Format(AssetDanshariStyle.Get().duplicateGroup, group.Count()), group);
                     root.AddChild(groupItem);
 
                     foreach (var info in group)
                     {
-                        var infoItem = new AssetTreeViewItem<AssetTreeModel.FileMd5Info>(id++, -1, info.displayName, info);
+                        var infoItem = new AssetTreeViewItem<AssetDuplicateTreeModel.FileMd5Info>(id++, -1, info.displayName, info);
                         groupItem.AddChild(infoItem);
                     }
                 }
@@ -48,7 +49,7 @@ namespace AssetDanshari
 
         protected override void RowGUI(RowGUIArgs args)
         {
-            var item = args.item as AssetTreeViewItem<AssetTreeModel.FileMd5Info>;
+            var item = args.item as AssetTreeViewItem<AssetDuplicateTreeModel.FileMd5Info>;
             if (item == null)
             {
                 base.RowGUI(args);
@@ -61,7 +62,7 @@ namespace AssetDanshari
             }
         }
 
-        private void CellGUI(Rect cellRect, AssetTreeViewItem<AssetTreeModel.FileMd5Info> item, int column, ref RowGUIArgs args)
+        private void CellGUI(Rect cellRect, AssetTreeViewItem<AssetDuplicateTreeModel.FileMd5Info> item, int column, ref RowGUIArgs args)
         {
             var info = item.data;
 
@@ -120,7 +121,7 @@ namespace AssetDanshari
 
         protected override void DoubleClickedItem(int id)
         {
-            var item = FindItem(id, rootItem) as AssetTreeViewItem<AssetTreeModel.FileMd5Info>;
+            var item = FindItem(id, rootItem) as AssetTreeViewItem<AssetDuplicateTreeModel.FileMd5Info>;
             if (item == null || item.data.deleted)
             {
                 return;
@@ -136,7 +137,7 @@ namespace AssetDanshari
 
         protected override void ContextClickedItem(int id)
         {
-            var item = FindItem(id, rootItem) as AssetTreeViewItem<AssetTreeModel.FileMd5Info>;
+            var item = FindItem(id, rootItem) as AssetTreeViewItem<AssetDuplicateTreeModel.FileMd5Info>;
             if (item == null || item.data.deleted)
             {
                 return;
@@ -144,6 +145,7 @@ namespace AssetDanshari
 
             GenericMenu menu = new GenericMenu();
             menu.AddItem(AssetDanshariStyle.Get().duplicateContextLocation, false, OnContextSetActiveItem, id);
+            menu.AddItem(AssetDanshariStyle.Get().duplicateContextExplorer, false, OnContextExplorerActiveItem, item);
             menu.AddSeparator(String.Empty);
             menu.AddItem(AssetDanshariStyle.Get().duplicateContextUseThis, false, OnContextUseThisItem, item);
             if (m_Model.dirs != null)
@@ -162,12 +164,21 @@ namespace AssetDanshari
             DoubleClickedItem((int)userdata);
         }
 
-        private void OnContextUseThisItem(object userdata)
+        private void OnContextExplorerActiveItem(object userdata)
         {
-            var item = userdata as AssetTreeViewItem<AssetTreeModel.FileMd5Info>;
+            var item = userdata as AssetTreeViewItem<AssetDuplicateTreeModel.FileMd5Info>;
             if (item != null)
             {
-                var itemParent = item.parent as AssetTreeViewItem<IGrouping<string, AssetTreeModel.FileMd5Info>>;
+                EditorUtility.RevealInFinder(item.data.fileRelativePath);
+            }
+        }
+
+        private void OnContextUseThisItem(object userdata)
+        {
+            var item = userdata as AssetTreeViewItem<AssetDuplicateTreeModel.FileMd5Info>;
+            if (item != null)
+            {
+                var itemParent = item.parent as AssetTreeViewItem<IGrouping<string, AssetDuplicateTreeModel.FileMd5Info>>;
                 m_Model.SetUseThis(itemParent.data, item.data);
                 Repaint();
             }
@@ -178,7 +189,7 @@ namespace AssetDanshari
             var selects = GetSelection();
             if (selects.Count > 0)
             {
-                var item = FindItem(selects[0], rootItem) as AssetTreeViewItem<AssetTreeModel.FileMd5Info>;
+                var item = FindItem(selects[0], rootItem) as AssetTreeViewItem<AssetDuplicateTreeModel.FileMd5Info>;
                 if (item == null)
                 {
                     return;
@@ -191,10 +202,10 @@ namespace AssetDanshari
 
         private void OnContextRemoveAllOther(object userdata)
         {
-            var item = userdata as AssetTreeViewItem<AssetTreeModel.FileMd5Info>;
+            var item = userdata as AssetTreeViewItem<AssetDuplicateTreeModel.FileMd5Info>;
             if (item != null)
             {
-                var itemParent = item.parent as AssetTreeViewItem<IGrouping<string, AssetTreeModel.FileMd5Info>>;
+                var itemParent = item.parent as AssetTreeViewItem<IGrouping<string, AssetDuplicateTreeModel.FileMd5Info>>;
                 m_Model.SetRemoveAllOther(itemParent.data, item.data);
                 Repaint();
             }
