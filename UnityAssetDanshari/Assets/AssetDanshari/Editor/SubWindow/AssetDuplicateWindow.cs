@@ -8,7 +8,7 @@ namespace AssetDanshari
 {
     public class AssetDuplicateWindow : EditorWindow
     {
-        public static void CheckPaths(string[] refPaths, string[] paths, string[] commonPaths)
+        public static void CheckPaths(string refPaths, string paths, string commonPaths)
         {
             var window = GetWindow<AssetDuplicateWindow>();
             window.Focus();
@@ -16,6 +16,7 @@ namespace AssetDanshari
         }
 
         private SearchField m_SearchField;
+        private SearchField m_SearchField2;
         private AssetTreeModel m_TreeModel;
         private AssetTreeView m_TreeView;
 
@@ -27,6 +28,7 @@ namespace AssetDanshari
         private void Awake()
         {
             titleContent = AssetDanshariStyle.Get().duplicateTitle;
+            minSize = new Vector2(727f, 331f);
         }
 
         private void OnEnable()
@@ -36,18 +38,23 @@ namespace AssetDanshari
 
         private void OnGUI()
         {
+            var style = AssetDanshariStyle.Get();
+
             if (m_TreeModel.data != null)
             {
                 EditorGUILayout.BeginHorizontal(EditorStyles.toolbar);
-                if (GUILayout.Button(AssetDanshariStyle.Get().expandAll, EditorStyles.toolbarButton, GUILayout.Width(60f)))
+                if (GUILayout.Button(style.expandAll, EditorStyles.toolbarButton, GUILayout.Width(50f)))
                 {
                     m_TreeView.ExpandAll();
                 }
-                if (GUILayout.Button(AssetDanshariStyle.Get().collapseAll, EditorStyles.toolbarButton, GUILayout.Width(60f)))
+                if (GUILayout.Button(style.collapseAll, EditorStyles.toolbarButton, GUILayout.Width(50f)))
                 {
                     m_TreeView.CollapseAll();
                 }
                 m_TreeView.searchString = m_SearchField.OnToolbarGUI(m_TreeView.searchString);
+                EditorGUILayout.Space();
+                EditorGUILayout.LabelField(style.assetReferenceAsset, GUILayout.Width(52f));
+                m_SearchField2.OnToolbarGUI(m_TreeModel.assetPaths);
                 EditorGUILayout.EndHorizontal();
                 m_TreeView.OnGUI(GUILayoutUtility.GetRect(0, 100000, 0, 100000));
             }
@@ -85,6 +92,8 @@ namespace AssetDanshari
             m_TreeView = new AssetTreeView(m_TreeViewState, multiColumnHeader, m_TreeModel);
 
             m_SearchField = new SearchField();
+            m_SearchField2 = new SearchField();
+            m_SearchField2.searchFieldControlID++;
         }
 
         private MultiColumnHeaderState CreateMultiColumnHeader()
@@ -136,7 +145,7 @@ namespace AssetDanshari
             return new MultiColumnHeaderState(columns);
         }
 
-        private void SetCheckPaths(string[] refPaths, string[] paths, string[] commonPaths)
+        private void SetCheckPaths(string refPaths, string paths, string commonPaths)
         {
             RemoveNotification();
             m_TreeModel.SetDataPaths(refPaths, paths, commonPaths);

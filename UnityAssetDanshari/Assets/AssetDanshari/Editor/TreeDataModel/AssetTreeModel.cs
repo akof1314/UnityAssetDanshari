@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Security.Cryptography;
+using System.Text.RegularExpressions;
 using UnityEditor;
 using UnityEditor.IMGUI.Controls;
 using UnityEngine;
@@ -21,6 +22,7 @@ namespace AssetDanshari
             public string fileTime;
             public long fileSize;
             public string md5;
+            public bool deleted;
         }
 
         public class CommonDirInfo
@@ -45,9 +47,15 @@ namespace AssetDanshari
             get { return m_CommonDirInfos; }
         }
 
-        public void SetDataPaths(string[] refPaths, string[] paths, string[] commonPaths)
+        public string assetPaths { get; private set; }
+
+        public void SetDataPaths(string refPathStr, string pathStr, string commonPathStr)
         {
+            assetPaths = pathStr;
             var fileList = new List<FileMd5Info>();
+            var refPaths = AssetDanshariUtility.PathStrToArray(refPathStr);
+            var paths = AssetDanshariUtility.PathStrToArray(pathStr);
+            var commonPaths = AssetDanshariUtility.PathStrToArray(commonPathStr);
 
             foreach (var path in paths)
             {
@@ -140,34 +148,53 @@ namespace AssetDanshari
         /// 去引用到的目录查找所有用到的guid，批量更改
         /// </summary>
         /// <param name="group"></param>
-        /// <param name="info"></param>
-        public void SetUseThis(IGrouping<string, FileMd5Info> group, FileMd5Info info)
+        /// <param name="useInfo"></param>
+        public void SetUseThis(IGrouping<string, FileMd5Info> group, FileMd5Info useInfo)
         {
+            var style = AssetDanshariStyle.Get();
+
+            string patternStr = String.Empty;
+            foreach (var info in group)
+            {
+                if (info != useInfo)
+                {
+                    patternStr += String.Format("({0})|", AssetDatabase.AssetPathToGUID(info.fileRelativePath));
+                }
+            }
+
+            patternStr = patternStr.TrimEnd('|');
+            Regex pattern = new Regex(patternStr);
+            string replaceStr = AssetDatabase.AssetPathToGUID(useInfo.fileRelativePath);
+
             foreach (var refPath in m_RefPaths)
             {
-                EditorUtility.DisplayProgressBar(AssetDanshariStyle.Get().progressTitle, String.Empty, 0f);
+                EditorUtility.DisplayProgressBar(style.progressTitle, String.Empty, 0f);
                 var allFiles = Directory.GetFiles(refPath, "*", SearchOption.AllDirectories);
 
                 for (var i = 0; i < allFiles.Length;)
                 {
                     var file = allFiles[i];
-                    if (!IsSupportExt(file))
+                    if (!AssetDanshariUtility.IsPlainTextExt(file))
                     {
                         i++;
                         continue;
                     }
 
-                    EditorUtility.DisplayProgressBar(AssetDanshariStyle.Get().progressTitle, file, i * 1f / allFiles.Length);
+                    EditorUtility.DisplayProgressBar(style.progressTitle, file, i * 1f / allFiles.Length);
                     try
                     {
                         string text = File.ReadAllText(file);
-
+                        string text2 = pattern.Replace(text, replaceStr);
+                        if (!string.Equals(text, text2))
+                        {
+                            File.WriteAllText(file, text2);
+                        }
                         i++;
                     }
                     catch (Exception e)
                     {
-                        if (!EditorUtility.DisplayDialog(AssetDanshariStyle.Get().errorTitle, file + "\n" + e.Message,
-                            AssetDanshariStyle.Get().continueStr, AssetDanshariStyle.Get().cancelStr))
+                        if (!EditorUtility.DisplayDialog(style.errorTitle, file + "\n" + e.Message,
+                            style.continueStr, style.cancelStr))
                         {
                             EditorUtility.ClearProgressBar();
                             return;
@@ -175,14 +202,46 @@ namespace AssetDanshari
                     }
                 }
             }
+            EditorUtility.ClearProgressBar();
+            EditorUtility.DisplayDialog(String.Empty, style.progressFinish, style.sureStr);
         }
 
-        public bool IsSupportExt(string ext)
+        public void SetMoveToCommon(FileMd5Info moveInfo, string destDir)
         {
-            ext = ext.ToLower();
-            return ext.EndsWith(".prefab") || ext.EndsWith(".unity") || 
-                   ext.EndsWith(".mat") || ext.EndsWith(".asset") ||
-                   ext.EndsWith(".controller") || ext.EndsWith(".anim");
+            var style = AssetDanshariStyle.Get();
+            string destPath = String.Format("{0}/{1}", destDir, moveInfo.displayName);
+            var errorStr = AssetDatabase.MoveAsset(moveInfo.fileRelativePath, destPath);
+            if (!string.IsNullOrEmpty(errorStr))
+            {
+                EditorUtility.DisplayDialog(style.errorTitle, errorStr, style.sureStr);
+            }
+            else
+            {
+                moveInfo.fileRelativePath = destPath;
+                EditorUtility.DisplayDialog(String.Empty, style.progressFinish, style.sureStr);
+            }
+        }
+
+        public void SetRemoveAllOther(IGrouping<string, FileMd5Info> group, FileMd5Info selectInfo)
+        {
+            var style = AssetDanshariStyle.Get();
+            if (!EditorUtility.DisplayDialog(String.Empty, style.sureStr + style.duplicateContextDelOther.text,
+                style.sureStr, style.cancelStr))
+            {
+                return;
+            }
+
+            foreach (var info in group)
+            {
+                if (info != selectInfo && !info.deleted)
+                {
+                    if (AssetDatabase.DeleteAsset(info.fileRelativePath))
+                    {
+                        info.deleted = true;
+                    }
+                }
+            }
+            EditorUtility.DisplayDialog(String.Empty, style.progressFinish, style.sureStr);
         }
     }
 }

@@ -15,7 +15,7 @@ namespace AssetDanshari
         public AssetTreeView(TreeViewState state, MultiColumnHeader multiColumnHeader, AssetTreeModel model) : base(state, multiColumnHeader)
         {
             m_Model = model;
-			rowHeight = 20f;
+            rowHeight = 20f;
             showAlternatingRowBackgrounds = true;
             showBorder = true;
         }
@@ -30,7 +30,7 @@ namespace AssetDanshari
                 var groups = m_Model.data;
                 foreach (var group in groups)
                 {
-                    var groupItem = new AssetTreeViewItem<IGrouping<string, AssetTreeModel.FileMd5Info>>(id++, -1, 
+                    var groupItem = new AssetTreeViewItem<IGrouping<string, AssetTreeModel.FileMd5Info>>(id++, -1,
                         String.Format(AssetDanshariStyle.Get().duplicateGroup, group.Count()), group);
                     root.AddChild(groupItem);
 
@@ -64,7 +64,7 @@ namespace AssetDanshari
         private void CellGUI(Rect cellRect, AssetTreeViewItem<AssetTreeModel.FileMd5Info> item, int column, ref RowGUIArgs args)
         {
             var info = item.data;
-            
+
             switch (column)
             {
                 case 0:
@@ -76,7 +76,7 @@ namespace AssetDanshari
                     position.height = 16f;
                     position.y += 2f;
                     Texture iconForItem = item.icon;
-                    if (iconForItem == null)
+                    if (iconForItem == null && !info.deleted)
                     {
                         iconForItem = AssetDatabase.GetCachedIcon(info.fileRelativePath);
                         if (iconForItem)
@@ -87,11 +87,19 @@ namespace AssetDanshari
                     if (iconForItem)
                     {
                         GUI.DrawTexture(position, iconForItem, ScaleMode.ScaleToFit);
-                        cellRect.xMin += 18f;
                         item.icon = iconForItem as Texture2D;
                     }
 
+                    cellRect.xMin += 18f;
                     DefaultGUI.Label(cellRect, info.displayName, args.selected, args.focused);
+                    if (info.deleted)
+                    {
+                        position.x = cellRect.xMax - 40f;
+                        position.y += 3f;
+                        position.height = 9f;
+                        position.width = 40f;
+                        GUI.DrawTexture(position, AssetDanshariStyle.Get().duplicateDelete.image, ScaleMode.ScaleToFit);
+                    }
                     break;
                 case 1:
                     DefaultGUI.Label(cellRect, info.fileRelativePath, args.selected, args.focused);
@@ -113,7 +121,7 @@ namespace AssetDanshari
         protected override void DoubleClickedItem(int id)
         {
             var item = FindItem(id, rootItem) as AssetTreeViewItem<AssetTreeModel.FileMd5Info>;
-            if (item == null)
+            if (item == null || item.data.deleted)
             {
                 return;
             }
@@ -129,7 +137,7 @@ namespace AssetDanshari
         protected override void ContextClickedItem(int id)
         {
             var item = FindItem(id, rootItem) as AssetTreeViewItem<AssetTreeModel.FileMd5Info>;
-            if (item == null)
+            if (item == null || item.data.deleted)
             {
                 return;
             }
@@ -142,7 +150,7 @@ namespace AssetDanshari
             {
                 foreach (var dir in m_Model.dirs)
                 {
-                    menu.AddItem(new GUIContent(AssetDanshariStyle.Get().duplicateContextMoveComm + dir.displayName), false, OnContextMoveItem, item);
+                    menu.AddItem(new GUIContent(AssetDanshariStyle.Get().duplicateContextMoveComm + dir.displayName), false, OnContextMoveItem, dir.fileRelativePath);
                 }
             }
             menu.AddItem(AssetDanshariStyle.Get().duplicateContextDelOther, false, OnContextRemoveAllOther, item);
@@ -167,10 +175,29 @@ namespace AssetDanshari
 
         private void OnContextMoveItem(object userdata)
         {
+            var selects = GetSelection();
+            if (selects.Count > 0)
+            {
+                var item = FindItem(selects[0], rootItem) as AssetTreeViewItem<AssetTreeModel.FileMd5Info>;
+                if (item == null)
+                {
+                    return;
+                }
+
+                var dirPath = userdata as string;
+                m_Model.SetMoveToCommon(item.data, dirPath);
+            }
         }
 
         private void OnContextRemoveAllOther(object userdata)
         {
+            var item = userdata as AssetTreeViewItem<AssetTreeModel.FileMd5Info>;
+            if (item != null)
+            {
+                var itemParent = item.parent as AssetTreeViewItem<IGrouping<string, AssetTreeModel.FileMd5Info>>;
+                m_Model.SetRemoveAllOther(itemParent.data, item.data);
+                Repaint();
+            }
         }
     }
 }

@@ -103,8 +103,8 @@ namespace AssetDanshari
             info.assetFolder = OnDrawElementAcceptDrop(rect3, info.assetFolder);
             if (GUI.Button(rect4, AssetDanshariStyle.Get().assetReferenceCheckDup))
             {
-                AssetDuplicateWindow.CheckPaths(GetPaths(info.referenceFolder),
-                    GetPaths(info.assetFolder), GetPaths(info.assetCommonFolder));
+                AssetDuplicateWindow.CheckPaths(info.referenceFolder,
+                    info.assetFolder, info.assetCommonFolder);
             }
 
             rect2.width += 25f;
@@ -140,19 +140,12 @@ namespace AssetDanshari
                         DragAndDrop.AcceptDrag();
                         GUI.changed = true;
 
-                        var paths = '\"' + string.Join("\" || \"", DragAndDrop.paths) + '\"';
-                        return paths;
+                        return AssetDanshariUtility.PathArrayToStr(DragAndDrop.paths);
                     }
                 }
             }
 
             return label;
-        }
-
-        private string[] GetPaths(string paths)
-        {
-            paths = paths.Trim('\"');
-            return paths.Split(new[] { "\" || \""}, StringSplitOptions.RemoveEmptyEntries);
         }
     }
 }

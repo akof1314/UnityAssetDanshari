@@ -1,5 +1,6 @@
 ﻿using System.Collections;
 using System.Collections.Generic;
+using UnityEditor;
 using UnityEngine;
 
 namespace AssetDanshari
@@ -21,6 +22,7 @@ namespace AssetDanshari
             public GUIContent duplicateHeaderContent2 = new GUIContent("路径");
             public GUIContent duplicateHeaderContent3 = new GUIContent("大小");
             public GUIContent duplicateHeaderContent4 = new GUIContent("创建时间");
+            public GUIContent duplicateDelete = EditorGUIUtility.IconContent("AS Badge Delete");
             public GUIContent duplicateContextLocation = new GUIContent("定位");
             public GUIContent duplicateContextUseThis = new GUIContent("仅使用此资源");
             public GUIContent duplicateContextDelOther = new GUIContent("删除其余资源");
@@ -31,8 +33,13 @@ namespace AssetDanshari
             public string errorTitle = "错误信息";
             public string continueStr = "继续执行";
             public string cancelStr = "取消";
+            public string sureStr = "确定";
+            public string progressFinish = "处理结束";
             public GUIContent expandAll = new GUIContent("展开");
             public GUIContent collapseAll = new GUIContent("折叠");
+
+            public string toolbarSeachTextField = "ToolbarSeachTextField";
+            public GUIStyle toolbarSeachTextFieldStyle;
         }
 
         private static Style sStyle;
