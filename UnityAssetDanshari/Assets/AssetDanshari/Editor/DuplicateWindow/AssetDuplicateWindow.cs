@@ -16,7 +16,6 @@ namespace AssetDanshari
         }
 
         private SearchField m_SearchField;
-        private SearchField m_SearchField2;
         private AssetDuplicateTreeModel m_DuplicateTreeModel;
         private AssetDuplicateTreeView m_DuplicateTreeView;
 
@@ -39,28 +38,42 @@ namespace AssetDanshari
         private void OnGUI()
         {
             var style = AssetDanshariStyle.Get();
+            style.InitGUI();
 
-            if (m_DuplicateTreeModel.data != null)
+            if (m_DuplicateTreeModel.assetPaths != null)
             {
+                if (m_DuplicateTreeModel.dataCount == 0)
+                {
+                    ShowNotification(style.duplicateNothing);
+                    GUILayout.FlexibleSpace();
+                }
+                else
+                {
+                    EditorGUILayout.BeginHorizontal(EditorStyles.toolbar);
+                    if (GUILayout.Button(style.expandAll, EditorStyles.toolbarButton, GUILayout.Width(50f)))
+                    {
+                        m_DuplicateTreeView.ExpandAll();
+                    }
+                    if (GUILayout.Button(style.collapseAll, EditorStyles.toolbarButton, GUILayout.Width(50f)))
+                    {
+                        m_DuplicateTreeView.CollapseAll();
+                    }
+                    m_DuplicateTreeView.searchString = m_SearchField.OnToolbarGUI(m_DuplicateTreeView.searchString);
+                    if (GUILayout.Button(style.exportCsv, EditorStyles.toolbarButton, GUILayout.Width(70f)))
+                    {
+                        m_DuplicateTreeModel.ExportCsv();
+                    }
+                    EditorGUILayout.EndHorizontal();
+                    m_DuplicateTreeView.OnGUI(GUILayoutUtility.GetRect(0, 100000, 0, 100000));
+                }
                 EditorGUILayout.BeginHorizontal(EditorStyles.toolbar);
-                if (GUILayout.Button(style.expandAll, EditorStyles.toolbarButton, GUILayout.Width(50f)))
-                {
-                    m_DuplicateTreeView.ExpandAll();
-                }
-                if (GUILayout.Button(style.collapseAll, EditorStyles.toolbarButton, GUILayout.Width(50f)))
-                {
-                    m_DuplicateTreeView.CollapseAll();
-                }
-                m_DuplicateTreeView.searchString = m_SearchField.OnToolbarGUI(m_DuplicateTreeView.searchString);
-                EditorGUILayout.Space();
-                EditorGUILayout.LabelField(style.assetReferenceAsset, GUILayout.Width(52f));
-                m_SearchField2.OnToolbarGUI(m_DuplicateTreeModel.assetPaths);
+                GUILayout.FlexibleSpace();
+                EditorGUILayout.LabelField(m_DuplicateTreeModel.assetPaths, style.labelStyle);
                 EditorGUILayout.EndHorizontal();
-                m_DuplicateTreeView.OnGUI(GUILayoutUtility.GetRect(0, 100000, 0, 100000));
             }
             else
             {
-                ShowNotification(AssetDanshariStyle.Get().duplicateNothing);
+                ShowNotification(style.duplicateWaiting);
             }
         }
 
@@ -92,8 +105,6 @@ namespace AssetDanshari
             m_DuplicateTreeView = new AssetDuplicateTreeView(m_TreeViewState, multiColumnHeader, m_DuplicateTreeModel);
 
             m_SearchField = new SearchField();
-            m_SearchField2 = new SearchField();
-            m_SearchField2.searchFieldControlID++;
         }
 
         private MultiColumnHeaderState CreateMultiColumnHeader()
@@ -149,8 +160,11 @@ namespace AssetDanshari
         {
             RemoveNotification();
             m_DuplicateTreeModel.SetDataPaths(refPaths, paths, commonPaths);
-            m_DuplicateTreeView.Reload();
-            m_DuplicateTreeView.ExpandAll();
+            if (m_DuplicateTreeModel.dataCount != 0)
+            {
+                m_DuplicateTreeView.Reload();
+                m_DuplicateTreeView.ExpandAll();
+            }
         }
     }
 }

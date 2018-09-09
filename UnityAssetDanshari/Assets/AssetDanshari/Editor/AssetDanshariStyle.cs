@@ -9,6 +9,9 @@ namespace AssetDanshari
     {
         public class Style
         {
+            public GUIContent help = new GUIContent("帮助");
+            public GUIContent about = new GUIContent("关于");
+            public GUIContent exportCsv = new GUIContent("导出 CSV");
             public GUIContent assetReferenceTitle = new GUIContent("检查列表");
             public GUIContent assetReferenceAsset = new GUIContent("资源目录", "存放资源的文件夹路径");
             public GUIContent assetReferenceAssetCommon = new GUIContent("公共资源目录", "整理资源时所放置的公共文件夹路径");
@@ -17,6 +20,7 @@ namespace AssetDanshari
             public GUIContent assetReferenceCheckRef = new GUIContent("引用查找");
 
             public GUIContent duplicateTitle = new GUIContent("重复资源检查");
+            public GUIContent duplicateWaiting = new GUIContent("等待进行检查重复资源");
             public GUIContent duplicateNothing = new GUIContent("所检查的文件夹没有重复资源");
             public GUIContent duplicateHeaderContent = new GUIContent("名称");
             public GUIContent duplicateHeaderContent2 = new GUIContent("路径");
@@ -39,8 +43,16 @@ namespace AssetDanshari
             public GUIContent expandAll = new GUIContent("展开");
             public GUIContent collapseAll = new GUIContent("折叠");
 
-            public string toolbarSeachTextField = "ToolbarSeachTextField";
-            public GUIStyle toolbarSeachTextFieldStyle;
+            public GUIStyle labelStyle;
+
+            public void InitGUI()
+            {
+                if (labelStyle == null)
+                {
+                    labelStyle = new GUIStyle(EditorStyles.label);
+                    labelStyle.alignment = TextAnchor.MiddleRight;
+                }
+            }
         }
 
         private static Style sStyle;

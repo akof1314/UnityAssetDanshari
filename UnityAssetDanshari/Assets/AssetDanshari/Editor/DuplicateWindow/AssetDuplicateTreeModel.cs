@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Security.Cryptography;
+using System.Text;
 using System.Text.RegularExpressions;
 using UnityEditor;
 using UnityEngine;
@@ -47,6 +48,8 @@ namespace AssetDanshari
 
         public string assetPaths { get; private set; }
 
+        public int dataCount { get; private set; }
+
         public void SetDataPaths(string refPathStr, string pathStr, string commonPathStr)
         {
             assetPaths = pathStr;
@@ -57,6 +60,11 @@ namespace AssetDanshari
 
             foreach (var path in paths)
             {
+                if (!Directory.Exists(path))
+                {
+                    continue;
+                }
+
                 EditorUtility.DisplayProgressBar(AssetDanshariStyle.Get().progressTitle, String.Empty, 0f);
                 var allFiles = Directory.GetFiles(path, "*", SearchOption.AllDirectories);
                 for (var i = 0; i < allFiles.Length;)
@@ -101,6 +109,7 @@ namespace AssetDanshari
 
             m_Groups = fileList.GroupBy(info => info.md5).Where(g => g.Count() > 1);
 
+            dataCount = 0;
             var dataPathLen = Application.dataPath.Length - 6;
             foreach (var group in m_Groups)
             {
@@ -116,11 +125,18 @@ namespace AssetDanshari
                         info.fileLength = string.Format("{0:F} Kb", info.fileSize / 1024f);
                     }
                 }
+
+                dataCount++;
             }
 
             m_CommonDirInfos = new List<CommonDirInfo>();
             foreach (var commonPath in commonPaths)
             {
+                if (!Directory.Exists(commonPath))
+                {
+                    continue;
+                }
+
                 var commonName = Path.GetFileNameWithoutExtension(commonPath);
                 var commonLen = commonPath.Length - commonName.Length;
                 m_CommonDirInfos.Add(new CommonDirInfo()
@@ -166,6 +182,11 @@ namespace AssetDanshari
 
             foreach (var refPath in m_RefPaths)
             {
+                if (!Directory.Exists(refPath))
+                {
+                    continue;
+                }
+
                 EditorUtility.DisplayProgressBar(style.progressTitle, String.Empty, 0f);
                 var allFiles = Directory.GetFiles(refPath, "*", SearchOption.AllDirectories);
 
@@ -240,6 +261,38 @@ namespace AssetDanshari
                 }
             }
             EditorUtility.DisplayDialog(String.Empty, style.progressFinish, style.sureStr);
+        }
+
+        public void ExportCsv()
+        {
+            string path = AssetDanshariUtility.GetSaveFilePath(typeof(AssetDuplicateWindow).Name);
+            if (string.IsNullOrEmpty(path))
+            {
+                return;
+            }
+
+            var style = AssetDanshariStyle.Get();
+            var sb = new StringBuilder();
+            sb.AppendFormat("\"{0}\",", style.duplicateHeaderContent.text);
+            sb.AppendFormat("\"{0}\",", style.duplicateHeaderContent2.text);
+            sb.AppendFormat("\"{0}\",", style.duplicateHeaderContent3.text);
+            sb.AppendFormat("\"{0}\"\n", style.duplicateHeaderContent4.text);
+
+            foreach (var group in m_Groups)
+            {
+                sb.AppendLine(String.Format(AssetDanshariStyle.Get().duplicateGroup, group.Count()));
+
+                foreach (var info in group)
+                {
+                    sb.AppendFormat("\"{0}\",", info.displayName);
+                    sb.AppendFormat("\"{0}\",", info.fileRelativePath);
+                    sb.AppendFormat("\"{0}\",", info.fileLength);
+                    sb.AppendFormat("\"{0}\"\n", info.fileTime);
+                }
+            }
+
+            AssetDanshariUtility.SaveFileText(path, sb.ToString());
+            GUIUtility.ExitGUI();
         }
     }
 }

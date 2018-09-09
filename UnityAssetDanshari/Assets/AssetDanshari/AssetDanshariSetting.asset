@@ -16,7 +16,7 @@ MonoBehaviour:
     referenceFolder: '"Assets/Simple UI/Samples"'
     assetFolder: '"Assets/Simple UI/PNG"'
     assetCommonFolder: '"Assets/Simple UI/PNG/Common"'
-  - title: "\u7279\u6548"
-    referenceFolder: 
-    assetFolder: 
-    assetCommonFolder: 
+  - title: "\u7279\u654888"
+    referenceFolder: 222112
+    assetFolder: '"Assets/Simple UI/Fonts"'
+    assetCommonFolder: www
