@@ -86,6 +86,7 @@ namespace AssetDanshari
                 return;
             }
 
+            var style = AssetDanshariStyle.Get();
             var info = m_AssetDanshariSetting.assetReferenceInfos[index];
             rect.height = EditorGUIUtility.singleLineHeight;
             rect.y += 2;
@@ -95,13 +96,14 @@ namespace AssetDanshari
             rect.y += EditorGUIUtility.singleLineHeight + 2;
 
             Rect rect2 = new Rect(rect) { width = 50f };
-            Rect rect3 = new Rect(rect) { x = rect2.x + rect2.width, width = rect.width - rect2.width - 75f };
+            Rect rect3 = new Rect(rect) { x = rect2.x + rect2.width, width = rect.width - rect2.width - 150f };
             Rect rect4 = new Rect(rect) { x = rect3.x + rect3.width + 5f, width = 70f };
-            EditorGUI.LabelField(rect2, AssetDanshariStyle.Get().assetReferenceReference);
+            Rect rect5 = new Rect(rect) { x = rect4.x + rect4.width + 5f, width = 70f };
+            EditorGUI.LabelField(rect2, style.assetReferenceReference);
             info.referenceFolder = EditorGUI.TextField(rect3, info.referenceFolder);
             info.referenceFolder = OnDrawElementAcceptDrop(rect3, info.referenceFolder);
             bool valueChanged = EditorGUI.EndChangeCheck();
-            if (GUI.Button(rect4, AssetDanshariStyle.Get().assetReferenceCheckRef))
+            if (GUI.Button(rect4, style.assetReferenceCheckRef))
             {
 
             }
@@ -109,14 +111,20 @@ namespace AssetDanshari
             rect2.y += EditorGUIUtility.singleLineHeight + 2;
             rect3.y += EditorGUIUtility.singleLineHeight + 2;
             rect4.y += EditorGUIUtility.singleLineHeight + 2;
-            EditorGUI.LabelField(rect2, AssetDanshariStyle.Get().assetReferenceAsset);
+            rect5.y += EditorGUIUtility.singleLineHeight + 2;
+            EditorGUI.LabelField(rect2, style.assetReferenceAsset);
             EditorGUI.BeginChangeCheck();
             info.assetFolder = EditorGUI.TextField(rect3, info.assetFolder);
             info.assetFolder = OnDrawElementAcceptDrop(rect3, info.assetFolder);
             valueChanged |= EditorGUI.EndChangeCheck();
-            if (GUI.Button(rect4, AssetDanshariStyle.Get().assetReferenceCheckDup))
+            if (GUI.Button(rect4, style.assetReferenceCheckDup))
             {
                 AssetDuplicateWindow.CheckPaths(info.referenceFolder,
+                    info.assetFolder, info.assetCommonFolder);
+            }
+            if (GUI.Button(rect5, style.assetReferenceDepend))
+            {
+                AssetDependenciesWindow.CheckPaths(info.referenceFolder,
                     info.assetFolder, info.assetCommonFolder);
             }
 
@@ -125,7 +133,7 @@ namespace AssetDanshari
             rect3.y += EditorGUIUtility.singleLineHeight + 2;
             rect3.x += 25f;
             rect3.width = rect.width - rect2.width;
-            EditorGUI.LabelField(rect2, AssetDanshariStyle.Get().assetReferenceAssetCommon);
+            EditorGUI.LabelField(rect2, style.assetReferenceAssetCommon);
             EditorGUI.BeginChangeCheck();
             info.assetCommonFolder = EditorGUI.TextField(rect3, info.assetCommonFolder);
             info.assetCommonFolder = OnDrawElementAcceptDrop(rect3, info.assetCommonFolder);
