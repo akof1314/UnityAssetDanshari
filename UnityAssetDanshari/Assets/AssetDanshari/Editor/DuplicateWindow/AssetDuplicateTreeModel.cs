@@ -31,10 +31,8 @@ namespace AssetDanshari
         }
 
         private IEnumerable<IGrouping<string, FileMd5Info>> m_Groups;
-
         private List<CommonDirInfo> m_CommonDirInfos;
-
-        private string[] m_RefPaths;
+        private int m_DataCount;
 
         public IEnumerable<IGrouping<string, FileMd5Info>> data
         {
@@ -46,22 +44,18 @@ namespace AssetDanshari
             get { return m_CommonDirInfos; }
         }
 
-        public int dataCount { get; private set; }
 
         public override bool HasData()
         {
-            return dataCount != 0;
+            return m_DataCount != 0;
         }
 
         public override void SetDataPaths(string refPathStr, string pathStr, string commonPathStr)
         {
-            assetPaths = pathStr;
+            base.SetDataPaths(refPathStr, pathStr, commonPathStr);
             var fileList = new List<FileMd5Info>();
-            var refPaths = AssetDanshariUtility.PathStrToArray(refPathStr);
-            var paths = AssetDanshariUtility.PathStrToArray(pathStr);
-            var commonPaths = AssetDanshariUtility.PathStrToArray(commonPathStr);
 
-            foreach (var path in paths)
+            foreach (var path in resPaths)
             {
                 if (!Directory.Exists(path))
                 {
@@ -112,13 +106,12 @@ namespace AssetDanshari
 
             m_Groups = fileList.GroupBy(info => info.md5).Where(g => g.Count() > 1);
 
-            dataCount = 0;
-            var dataPathLen = Application.dataPath.Length - 6;
+            m_DataCount = 0;
             foreach (var group in m_Groups)
             {
                 foreach (var info in group)
                 {
-                    info.fileRelativePath = info.filePath.Substring(dataPathLen).Replace('\\', '/');
+                    info.fileRelativePath = FullPathToRelative(info.filePath);
                     if (info.fileSize >= (1 << 20))
                     {
                         info.fileLength = string.Format("{0:F} Mb", info.fileSize / 1024f / 1024f);
@@ -129,7 +122,7 @@ namespace AssetDanshari
                     }
                 }
 
-                dataCount++;
+                m_DataCount++;
             }
 
             m_CommonDirInfos = new List<CommonDirInfo>();
@@ -157,7 +150,6 @@ namespace AssetDanshari
                 }
             }
 
-            m_RefPaths = refPaths;
             EditorUtility.ClearProgressBar();
         }
 
@@ -183,7 +175,7 @@ namespace AssetDanshari
             Regex pattern = new Regex(patternStr);
             string replaceStr = AssetDatabase.AssetPathToGUID(useInfo.fileRelativePath);
 
-            foreach (var refPath in m_RefPaths)
+            foreach (var refPath in refPaths)
             {
                 if (!Directory.Exists(refPath))
                 {

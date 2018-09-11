@@ -48,6 +48,7 @@ namespace AssetDanshari
             public string progressFinish = "处理结束";
             public GUIContent expandAll = new GUIContent("展开");
             public GUIContent collapseAll = new GUIContent("折叠");
+            public Texture2D folderIcon = EditorGUIUtility.FindTexture("Folder Icon");
 
             public GUIStyle labelStyle;
 

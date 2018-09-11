@@ -19,19 +19,19 @@ namespace AssetDanshari
         {
             var root = new TreeViewItem { id = 0, depth = -1, displayName = "Root" };
 
-            int id = 1;
+            ResetAutoID();
             if (model != null && model.data != null)
             {
                 var groups = model.data;
                 foreach (var group in groups)
                 {
-                    var groupItem = new AssetTreeViewItem<IGrouping<string, AssetDuplicateTreeModel.FileMd5Info>>(id++, -1,
+                    var groupItem = new AssetTreeViewItem<IGrouping<string, AssetDuplicateTreeModel.FileMd5Info>>(GetAutoID(), -1,
                         String.Format(AssetDanshariStyle.Get().duplicateGroup, group.Count()), group);
                     root.AddChild(groupItem);
 
                     foreach (var info in group)
                     {
-                        var infoItem = new AssetTreeViewItem<AssetDuplicateTreeModel.FileMd5Info>(id++, -1, info.displayName, info);
+                        var infoItem = new AssetTreeViewItem<AssetDuplicateTreeModel.FileMd5Info>(GetAutoID(), -1, info.displayName, info);
                         groupItem.AddChild(infoItem);
                     }
                 }
@@ -63,38 +63,7 @@ namespace AssetDanshari
             switch (column)
             {
                 case 0:
-                    float num = GetFoldoutIndent(item);
-                    cellRect.xMin += num;
-
-                    Rect position = cellRect;
-                    position.width = 16f;
-                    position.height = 16f;
-                    position.y += 2f;
-                    Texture iconForItem = item.icon;
-                    if (iconForItem == null && !info.deleted)
-                    {
-                        iconForItem = AssetDatabase.GetCachedIcon(info.fileRelativePath);
-                        if (iconForItem)
-                        {
-                            item.icon = iconForItem as Texture2D;
-                        }
-                    }
-                    if (iconForItem)
-                    {
-                        GUI.DrawTexture(position, iconForItem, ScaleMode.ScaleToFit);
-                        item.icon = iconForItem as Texture2D;
-                    }
-
-                    cellRect.xMin += 18f;
-                    DefaultGUI.Label(cellRect, info.displayName, args.selected, args.focused);
-                    if (info.deleted)
-                    {
-                        position.x = cellRect.xMax - 40f;
-                        position.y += 3f;
-                        position.height = 9f;
-                        position.width = 40f;
-                        GUI.DrawTexture(position, AssetDanshariStyle.Get().duplicateDelete.image, ScaleMode.ScaleToFit);
-                    }
+                    DrawItemWithIcon(cellRect, item, ref args, info.displayName, info.fileRelativePath, info.deleted);
                     break;
                 case 1:
                     DefaultGUI.Label(cellRect, info.fileRelativePath, args.selected, args.focused);
