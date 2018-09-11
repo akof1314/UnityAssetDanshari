@@ -107,7 +107,7 @@ namespace AssetDanshari
             {
 
             }
-            
+
             rect2.y += EditorGUIUtility.singleLineHeight + 2;
             rect3.y += EditorGUIUtility.singleLineHeight + 2;
             rect4.y += EditorGUIUtility.singleLineHeight + 2;
@@ -119,12 +119,12 @@ namespace AssetDanshari
             valueChanged |= EditorGUI.EndChangeCheck();
             if (GUI.Button(rect4, style.assetReferenceCheckDup))
             {
-                AssetDuplicateWindow.CheckPaths(info.referenceFolder,
+                AssetBaseWindow.CheckPaths<AssetDuplicateWindow>(info.referenceFolder,
                     info.assetFolder, info.assetCommonFolder);
             }
             if (GUI.Button(rect5, style.assetReferenceDepend))
             {
-                AssetDependenciesWindow.CheckPaths(info.referenceFolder,
+                AssetBaseWindow.CheckPaths<AssetDependenciesWindow>(info.referenceFolder,
                     info.assetFolder, info.assetCommonFolder);
             }
 

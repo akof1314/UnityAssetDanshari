@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.Linq;
 using UnityEditor;
 using UnityEditor.IMGUI.Controls;
@@ -7,18 +6,13 @@ using UnityEngine;
 
 namespace AssetDanshari
 {
-    public class AssetDuplicateTreeView : TreeView
+    public class AssetDuplicateTreeView : AssetTreeView
     {
-        private AssetDuplicateTreeModel m_Model;
-        private List<TreeViewItem> m_Rows;
+        private AssetDuplicateTreeModel model { get; set; }
 
-        public AssetDuplicateTreeView(TreeViewState state, MultiColumnHeader multiColumnHeader, AssetDuplicateTreeModel model) : base(state, multiColumnHeader)
+        public AssetDuplicateTreeView(TreeViewState state, MultiColumnHeader multiColumnHeader, AssetTreeModel model) : base(state, multiColumnHeader, model)
         {
-            m_Model = model;
-            rowHeight = 20f;
-            showAlternatingRowBackgrounds = true;
-            showBorder = true;
-            multiColumnHeader.height = 23f;
+            this.model = model as AssetDuplicateTreeModel;
         }
 
         protected override TreeViewItem BuildRoot()
@@ -26,9 +20,9 @@ namespace AssetDanshari
             var root = new TreeViewItem { id = 0, depth = -1, displayName = "Root" };
 
             int id = 1;
-            if (m_Model != null && m_Model.data != null)
+            if (model != null && model.data != null)
             {
-                var groups = m_Model.data;
+                var groups = model.data;
                 foreach (var group in groups)
                 {
                     var groupItem = new AssetTreeViewItem<IGrouping<string, AssetDuplicateTreeModel.FileMd5Info>>(id++, -1,
@@ -127,12 +121,7 @@ namespace AssetDanshari
                 return;
             }
 
-            var obj = AssetDatabase.LoadAssetAtPath<UnityEngine.Object>(item.data.fileRelativePath);
-            if (obj)
-            {
-                Selection.activeObject = obj;
-                EditorGUIUtility.PingObject(obj);
-            }
+            model.PingObject(item.data.fileRelativePath);
         }
 
         protected override void ContextClickedItem(int id)
@@ -148,9 +137,9 @@ namespace AssetDanshari
             menu.AddItem(AssetDanshariStyle.Get().duplicateContextExplorer, false, OnContextExplorerActiveItem, item);
             menu.AddSeparator(String.Empty);
             menu.AddItem(AssetDanshariStyle.Get().duplicateContextUseThis, false, OnContextUseThisItem, item);
-            if (m_Model.dirs != null)
+            if (model.dirs != null)
             {
-                foreach (var dir in m_Model.dirs)
+                foreach (var dir in model.dirs)
                 {
                     menu.AddItem(new GUIContent(AssetDanshariStyle.Get().duplicateContextMoveComm + dir.displayName), false, OnContextMoveItem, dir.fileRelativePath);
                 }
@@ -179,7 +168,7 @@ namespace AssetDanshari
             if (item != null)
             {
                 var itemParent = item.parent as AssetTreeViewItem<IGrouping<string, AssetDuplicateTreeModel.FileMd5Info>>;
-                m_Model.SetUseThis(itemParent.data, item.data);
+                model.SetUseThis(itemParent.data, item.data);
                 Repaint();
             }
         }
@@ -196,7 +185,7 @@ namespace AssetDanshari
                 }
 
                 var dirPath = userdata as string;
-                m_Model.SetMoveToCommon(item.data, dirPath);
+                model.SetMoveToCommon(item.data, dirPath);
             }
         }
 
@@ -206,7 +195,7 @@ namespace AssetDanshari
             if (item != null)
             {
                 var itemParent = item.parent as AssetTreeViewItem<IGrouping<string, AssetDuplicateTreeModel.FileMd5Info>>;
-                m_Model.SetRemoveAllOther(itemParent.data, item.data);
+                model.SetRemoveAllOther(itemParent.data, item.data);
                 Repaint();
             }
         }

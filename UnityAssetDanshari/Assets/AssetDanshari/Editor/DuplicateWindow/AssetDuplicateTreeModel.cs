@@ -10,7 +10,7 @@ using UnityEngine;
 
 namespace AssetDanshari
 {
-    public class AssetDuplicateTreeModel
+    public class AssetDuplicateTreeModel : AssetTreeModel
     {
         public class FileMd5Info
         {
@@ -46,11 +46,14 @@ namespace AssetDanshari
             get { return m_CommonDirInfos; }
         }
 
-        public string assetPaths { get; private set; }
-
         public int dataCount { get; private set; }
 
-        public void SetDataPaths(string refPathStr, string pathStr, string commonPathStr)
+        public override bool HasData()
+        {
+            return dataCount != 0;
+        }
+
+        public override void SetDataPaths(string refPathStr, string pathStr, string commonPathStr)
         {
             assetPaths = pathStr;
             var fileList = new List<FileMd5Info>();
@@ -263,7 +266,7 @@ namespace AssetDanshari
             EditorUtility.DisplayDialog(String.Empty, style.progressFinish, style.sureStr);
         }
 
-        public void ExportCsv()
+        public override void ExportCsv()
         {
             string path = AssetDanshariUtility.GetSaveFilePath(typeof(AssetDuplicateWindow).Name);
             if (string.IsNullOrEmpty(path))

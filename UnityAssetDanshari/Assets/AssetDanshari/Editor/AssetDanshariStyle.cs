@@ -33,6 +33,13 @@ namespace AssetDanshari
             public string duplicateContextMoveComm = "移入公共目录/";
             public string duplicateGroup = "文件数：{0}";
 
+            public GUIContent dependenciesTitle = new GUIContent("资源被引用查找");
+            public GUIContent dependenciesWaiting = new GUIContent("等待进行资源被引用查找");
+            public GUIContent dependenciesNothing = new GUIContent("资源文件夹没有任何数据");
+            public GUIContent dependenciesHeaderContent = new GUIContent("名称");
+            public GUIContent dependenciesHeaderContent2 = new GUIContent("被引用的路径");
+            public GUIContent dependenciesHeaderContent3 = new GUIContent("次数");
+
             public string progressTitle = "正在处理";
             public string errorTitle = "错误信息";
             public string continueStr = "继续执行";
