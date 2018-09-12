@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using System.IO;
 using UnityEngine;
 using UnityEditor;
-using Object = UnityEngine.Object;
 
 namespace AssetDanshari
 {
@@ -14,6 +13,7 @@ namespace AssetDanshari
             public string fileRelativePath;
             public string displayName;
             public bool deleted;
+            public bool added;
         }
 
         /// <summary>
@@ -76,21 +76,22 @@ namespace AssetDanshari
             }
         }
 
-        public virtual bool SetMoveToCommon(AssetInfo moveInfo, string destDir)
+        public bool SetMoveToCommon(AssetInfo moveInfo, string destDir)
         {
             var style = AssetDanshariStyle.Get();
             string destPath = String.Format("{0}/{1}", destDir, moveInfo.displayName);
+            if (moveInfo.fileRelativePath == destPath)
+            {
+                return true;
+            }
+
             var errorStr = AssetDatabase.MoveAsset(moveInfo.fileRelativePath, destPath);
             if (!string.IsNullOrEmpty(errorStr))
             {
                 EditorUtility.DisplayDialog(style.errorTitle, errorStr, style.sureStr);
                 return false;
             }
-            else
-            {
-                moveInfo.fileRelativePath = destPath;
-                EditorUtility.DisplayDialog(String.Empty, style.progressFinish, style.sureStr);
-            }
+
             return true;
         }
 
@@ -101,7 +102,7 @@ namespace AssetDanshari
 
         public void PingObject(string fileRelativePath)
         {
-            var obj = AssetDatabase.LoadAssetAtPath<Object>(fileRelativePath);
+            var obj = AssetDatabase.LoadAssetAtPath<UnityEngine.Object>(fileRelativePath);
             if (obj)
             {
                 Selection.activeObject = obj;

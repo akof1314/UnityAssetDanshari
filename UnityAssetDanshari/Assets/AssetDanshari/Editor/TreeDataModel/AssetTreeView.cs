@@ -10,9 +10,9 @@ namespace AssetDanshari
     public class AssetTreeView : TreeView
     {
         protected AssetTreeModel m_Model;
-        protected List<TreeViewItem> m_Rows;
         private int m_Id = 0;
         private int m_ReverseId = 0;
+        protected List<TreeViewItem> m_WatcherItems = new List<TreeViewItem>();
 
         public AssetTreeView(TreeViewState state, MultiColumnHeader multiColumnHeader, AssetTreeModel model) : base(state, multiColumnHeader)
         {
@@ -21,6 +21,17 @@ namespace AssetDanshari
             showAlternatingRowBackgrounds = true;
             showBorder = true;
             multiColumnHeader.height = 23f;
+
+            AssetDanshariWatcher.onImportedAssets += OnWatcherImportedAssets;
+            AssetDanshariWatcher.onDeletedAssets += OnWatcherDeletedAssets;
+            AssetDanshariWatcher.onMovedAssets += OnWatcherMovedAssets;
+        }
+
+        public void Destroy()
+        {
+            AssetDanshariWatcher.onImportedAssets -= OnWatcherImportedAssets;
+            AssetDanshariWatcher.onDeletedAssets -= OnWatcherDeletedAssets;
+            AssetDanshariWatcher.onMovedAssets -= OnWatcherMovedAssets;
         }
 
         protected override TreeViewItem BuildRoot()
@@ -229,5 +240,97 @@ namespace AssetDanshari
             var selects = GetSelection();
             return selects.Count > 1;
         }
+
+        #region  数据变化
+
+        private void OnWatcherImportedAssets(string[] importedAssets)
+        {
+            Debug.Log("importedAsset");
+            foreach (var importedAsset in importedAssets)
+            {
+                Debug.Log(importedAsset);
+            }
+            if (OnWatcherImportedAssetsEvent(importedAssets))
+            {
+                Repaint();
+            }
+        }
+
+        private void OnWatcherDeletedAssets(string[] deletedAssets)
+        {
+            Debug.Log("deletedAssets");
+            foreach (var importedAsset in deletedAssets)
+            {
+                Debug.Log(importedAsset);
+            }
+            if (OnWatcherDeletedAssetsEvent(deletedAssets))
+            {
+                Repaint();
+            }
+        }
+
+        private void OnWatcherMovedAssets(string[] movedFromAssetPaths, string[] movedAssets)
+        {
+            Debug.Log("movedAssets");
+            foreach (var importedAsset in movedFromAssetPaths)
+            {
+                Debug.Log(importedAsset);
+            }
+            if (OnWatcherMovedAssetsEvent(movedFromAssetPaths, movedAssets))
+            {
+                Repaint();
+            }
+        }
+
+        protected virtual bool OnWatcherImportedAssetsEvent(string[] importedAssets)
+        {
+            return false;
+        }
+
+        protected virtual bool OnWatcherDeletedAssetsEvent(string[] deletedAssets)
+        {
+            m_WatcherItems.Clear();
+            FindItemsByAssetPaths(rootItem, deletedAssets, m_WatcherItems);
+            return false;
+        }
+
+        protected virtual bool OnWatcherMovedAssetsEvent(string[] movedFromAssetPaths, string[] movedAssets)
+        {
+            m_WatcherItems.Clear();
+            FindItemsByAssetPaths(rootItem, movedFromAssetPaths, m_WatcherItems);
+            return false;
+        }
+
+        private void FindItemsByAssetPaths(TreeViewItem searchFromThisItem, string[] assetPaths, List<TreeViewItem> result)
+        {
+            if (searchFromThisItem == null)
+            {
+                return;
+            }
+
+            var assetInfo = GetItemAssetInfo(searchFromThisItem);
+            if (assetInfo != null)
+            {
+                foreach (var assetPath in assetPaths)
+                {
+                    if (assetPath == assetInfo.fileRelativePath)
+                    {
+                        result.Add(searchFromThisItem);
+                        break;
+                    }
+                }
+            }
+
+            if (searchFromThisItem.hasChildren)
+            {
+                foreach (var child in searchFromThisItem.children)
+                {
+                    FindItemsByAssetPaths(child, assetPaths, result);
+                }
+            }
+        }
+
+        #endregion
+
     }
 }

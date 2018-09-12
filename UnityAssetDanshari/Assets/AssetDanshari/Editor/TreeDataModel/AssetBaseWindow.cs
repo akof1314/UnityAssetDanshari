@@ -27,6 +27,11 @@ namespace AssetDanshari
             Init();
         }
 
+        private void OnDisable()
+        {
+            DestroyTree();
+        }
+
         private void OnGUI()
         {
             DrawGUI(GUIContent.none, GUIContent.none, false);
@@ -64,6 +69,14 @@ namespace AssetDanshari
         {
             m_AssetTreeModel = new AssetTreeModel();
             m_AssetTreeView = new AssetTreeView(m_TreeViewState, multiColumnHeader, m_AssetTreeModel);
+        }
+
+        private void DestroyTree()
+        {
+            if (m_AssetTreeView != null)
+            {
+                m_AssetTreeView.Destroy();
+            }
         }
 
         protected virtual void DrawGUI(GUIContent waiting, GUIContent nothing, bool expandCollapseComplex)
