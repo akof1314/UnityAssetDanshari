@@ -1,6 +1,5 @@
-﻿using UnityEngine;
-using System.Collections;
-using System.Collections.Generic;
+﻿using System;
+using UnityEngine;
 using UnityEditor;
 using UnityEditor.IMGUI.Controls;
 
@@ -17,7 +16,7 @@ namespace AssetDanshari
 
         protected override TreeViewItem BuildRoot()
         {
-            var root = new TreeViewItem { id = 0, depth = -1, displayName = "Root" };
+            var root = new TreeViewItem { id = -1, depth = -1, displayName = "Root" };
 
             ResetAutoID();
             if (model != null && model.data != null && model.data.dirs != null)
@@ -52,23 +51,57 @@ namespace AssetDanshari
                 {
                     var item = new AssetTreeViewItem<AssetDependenciesTreeModel.FileBeDependInfo>(GetAutoID(), -1, info.displayName, info);
                     dirItem.AddChild(item);
+
+                    if (info.beDependPaths != null)
+                    {
+                        foreach (var beDependPath in info.beDependPaths)
+                        {
+                            var item2 = new AssetTreeViewItem<AssetTreeModel.AssetInfo>(GetAutoReverseID(), -1, String.Empty, beDependPath);
+                            item.AddChild(item2);
+                        }
+                    }
                 }
             }
+        }
+
+        protected override AssetTreeModel.AssetInfo GetItemAssetInfo(TreeViewItem item)
+        {
+            var item2 = item as AssetTreeViewItem<AssetDependenciesTreeModel.FileBeDependInfo>;
+            if (item2 != null)
+            {
+                return item2.data;
+            }
+            var item3 = item as AssetTreeViewItem<AssetDependenciesTreeModel.DirInfo>;
+            if (item3 != null)
+            {
+                return item3.data;
+            }
+            return base.GetItemAssetInfo(item);
         }
 
         protected override void RowGUI(RowGUIArgs args)
         {
             var item = args.item as AssetTreeViewItem<AssetDependenciesTreeModel.FileBeDependInfo>;
-            if (item == null)
+            if (item != null)
             {
-                base.RowGUI(args);
+                for (int i = 0; i < args.GetNumVisibleColumns(); ++i)
+                {
+                    CellGUI(args.GetCellRect(i), item, args.GetColumn(i), ref args);
+                }
                 return;
             }
 
-            for (int i = 0; i < args.GetNumVisibleColumns(); ++i)
+            var item2 = args.item as AssetTreeViewItem<AssetTreeModel.AssetInfo>;
+            if (item2 != null)
             {
-                CellGUI(args.GetCellRect(i), item, args.GetColumn(i), ref args);
+                for (int i = 0; i < args.GetNumVisibleColumns(); ++i)
+                {
+                    CellGUI2(args.GetCellRect(i), item2, args.GetColumn(i), ref args);
+                }
+                return;
             }
+
+            base.RowGUI(args);
         }
 
         private void CellGUI(Rect cellRect, AssetTreeViewItem<AssetDependenciesTreeModel.FileBeDependInfo> item, int column, ref RowGUIArgs args)
@@ -81,15 +114,59 @@ namespace AssetDanshari
                     DrawItemWithIcon(cellRect, item, ref args, info.displayName, info.fileRelativePath, info.deleted);
                     break;
                 case 1:
-                    DefaultGUI.Label(cellRect, info.fileRelativePath, args.selected, args.focused);
-                    break;
-                case 2:
                     int count = info.GetBeDependCount();
                     if (count > 0)
                     {
                         DefaultGUI.Label(cellRect, count.ToString(), args.selected, args.focused);
                     }
                     break;
+            }
+        }
+
+        private void CellGUI2(Rect cellRect, AssetTreeViewItem<AssetTreeModel.AssetInfo> item, int column, ref RowGUIArgs args)
+        {
+            var info = item.data;
+
+            switch (column)
+            {
+                case 0:
+                    break;
+                case 1:
+                    DrawItemWithIcon(cellRect, item, ref args, info.displayName, info.fileRelativePath, false, false);
+                    break;
+            }
+        }
+
+        protected override bool CanMultiSelect(TreeViewItem item)
+        {
+            return true;
+        }
+
+        protected override void ContextClickedItem(int id)
+        {
+            var item = FindItem(id, rootItem);
+            var assetInfo = GetItemAssetInfo(item);
+            if (item == null || assetInfo == null || assetInfo.deleted)
+            {
+                return;
+            }
+
+            GenericMenu menu = new GenericMenu();
+            if (!IsSelectionMulti())
+            {
+                menu.AddItem(AssetDanshariStyle.Get().duplicateContextLocation, false, OnContextSetActiveItem, id);
+                menu.AddItem(AssetDanshariStyle.Get().duplicateContextExplorer, false, OnContextExplorerActiveItem, item);
+                menu.AddSeparator(String.Empty);
+            }
+
+            if (!IsSelectionContainsReverseItem())
+            {
+                AddContextMoveComm(menu);
+            }
+
+            if (menu.GetItemCount() > 0)
+            {
+                menu.ShowAsContext();
             }
         }
     }

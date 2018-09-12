@@ -9,13 +9,10 @@ namespace AssetDanshari
 {
     public class AssetDependenciesTreeModel : AssetTreeModel
     {
-        public class FileBeDependInfo
+        public class FileBeDependInfo : AssetInfo
         {
             public string filePath;
-            public string fileRelativePath;
-            public string displayName;
-            public List<string> beDependPaths;
-            public bool deleted;
+            public List<AssetInfo> beDependPaths;
             public Regex regex;
 
             public int GetBeDependCount()
@@ -28,11 +25,8 @@ namespace AssetDanshari
             }
         }
 
-        public class DirInfo
+        public class DirInfo : AssetInfo
         {
-            public string fileRelativePath;
-            public string displayName;
-
             public List<DirInfo> dirs;
             public List<FileBeDependInfo> files;
         }
@@ -75,7 +69,7 @@ namespace AssetDanshari
 
                 for (var i = 0; i < allFiles.Length;)
                 {
-                    var file = allFiles[i];
+                    var file = PathToStandardized(allFiles[i]);
                     if (!AssetDanshariUtility.IsPlainTextExt(file))
                     {
                         i++;
@@ -86,7 +80,12 @@ namespace AssetDanshari
                     try
                     {
                         string text = File.ReadAllText(file);
-                        CheckFileMatch(dirInfo, file, text);
+                        AssetInfo fileInfo = new AssetInfo()
+                        {
+                            displayName = Path.GetFileName(file),
+                            fileRelativePath = file
+                        };
+                        CheckFileMatch(dirInfo, fileInfo, text);
                         i++;
                     }
                     catch (Exception e)
@@ -111,7 +110,7 @@ namespace AssetDanshari
             foreach (var allDir in allDirs)
             {
                 DirInfo info = new DirInfo();
-                info.fileRelativePath = allDir.Replace('\\', '/');
+                info.fileRelativePath = PathToStandardized(allDir);
                 info.displayName = Path.GetFileName(allDir);
                 if (dirInfo.dirs == null)
                 {
@@ -144,7 +143,7 @@ namespace AssetDanshari
             }
         }
 
-        private void CheckFileMatch(DirInfo dirInfo, string filePath, string fileText)
+        private void CheckFileMatch(DirInfo dirInfo, AssetInfo filePath, string fileText)
         {
             if (dirInfo.dirs != null)
             {
@@ -162,7 +161,7 @@ namespace AssetDanshari
                     {
                         if (info.beDependPaths == null)
                         {
-                            info.beDependPaths = new List<string>();
+                            info.beDependPaths = new List<AssetInfo>();
                         }
                         info.beDependPaths.Add(filePath);
                     }

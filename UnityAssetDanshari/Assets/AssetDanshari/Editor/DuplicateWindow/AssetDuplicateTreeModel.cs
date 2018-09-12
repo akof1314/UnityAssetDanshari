@@ -12,38 +12,22 @@ namespace AssetDanshari
 {
     public class AssetDuplicateTreeModel : AssetTreeModel
     {
-        public class FileMd5Info
+        public class FileMd5Info : AssetInfo
         {
             public string filePath;
-            public string fileRelativePath;
-            public string displayName;
             public string fileLength;
             public string fileTime;
             public long fileSize;
             public string md5;
-            public bool deleted;
-        }
-
-        public class CommonDirInfo
-        {
-            public string fileRelativePath;
-            public string displayName;
         }
 
         private IEnumerable<IGrouping<string, FileMd5Info>> m_Groups;
-        private List<CommonDirInfo> m_CommonDirInfos;
         private int m_DataCount;
 
         public IEnumerable<IGrouping<string, FileMd5Info>> data
         {
             get { return m_Groups; }
         }
-
-        public List<CommonDirInfo> dirs
-        {
-            get { return m_CommonDirInfos; }
-        }
-
 
         public override bool HasData()
         {
@@ -125,31 +109,6 @@ namespace AssetDanshari
                 m_DataCount++;
             }
 
-            m_CommonDirInfos = new List<CommonDirInfo>();
-            foreach (var commonPath in commonPaths)
-            {
-                if (!Directory.Exists(commonPath))
-                {
-                    continue;
-                }
-
-                var commonName = Path.GetFileNameWithoutExtension(commonPath);
-                var commonLen = commonPath.Length - commonName.Length;
-                m_CommonDirInfos.Add(new CommonDirInfo()
-                {
-                    fileRelativePath = commonPath, displayName = commonName
-                });
-
-                var allDirs = Directory.GetDirectories(commonPath, "*", SearchOption.AllDirectories);
-                foreach (var allDir in allDirs)
-                {
-                    var dirInfo = new CommonDirInfo();
-                    dirInfo.fileRelativePath = allDir.Replace('\\', '/');
-                    dirInfo.displayName = dirInfo.fileRelativePath.Substring(commonLen);
-                    m_CommonDirInfos.Add(dirInfo);
-                }
-            }
-
             EditorUtility.ClearProgressBar();
         }
 
@@ -218,22 +177,6 @@ namespace AssetDanshari
             }
             EditorUtility.ClearProgressBar();
             EditorUtility.DisplayDialog(String.Empty, style.progressFinish, style.sureStr);
-        }
-
-        public void SetMoveToCommon(FileMd5Info moveInfo, string destDir)
-        {
-            var style = AssetDanshariStyle.Get();
-            string destPath = String.Format("{0}/{1}", destDir, moveInfo.displayName);
-            var errorStr = AssetDatabase.MoveAsset(moveInfo.fileRelativePath, destPath);
-            if (!string.IsNullOrEmpty(errorStr))
-            {
-                EditorUtility.DisplayDialog(style.errorTitle, errorStr, style.sureStr);
-            }
-            else
-            {
-                moveInfo.fileRelativePath = destPath;
-                EditorUtility.DisplayDialog(String.Empty, style.progressFinish, style.sureStr);
-            }
         }
 
         public void SetRemoveAllOther(IGrouping<string, FileMd5Info> group, FileMd5Info selectInfo)

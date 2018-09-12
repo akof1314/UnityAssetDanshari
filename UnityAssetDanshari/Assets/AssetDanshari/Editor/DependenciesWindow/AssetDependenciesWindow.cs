@@ -20,9 +20,9 @@ namespace AssetDanshari
             m_AssetTreeView = new AssetDependenciesTreeView(m_TreeViewState, multiColumnHeader, m_AssetTreeModel);
         }
 
-        protected override void DrawGUI(GUIContent waiting, GUIContent nothing)
+        protected override void DrawGUI(GUIContent waiting, GUIContent nothing, bool expandCollapseComplex)
         {
-            base.DrawGUI(AssetDanshariStyle.Get().dependenciesWaiting, AssetDanshariStyle.Get().dependenciesNothing);
+            base.DrawGUI(AssetDanshariStyle.Get().dependenciesWaiting, AssetDanshariStyle.Get().dependenciesNothing, true);
         }
 
         protected override MultiColumnHeaderState CreateMultiColumnHeader()
@@ -35,7 +35,7 @@ namespace AssetDanshari
                     headerTextAlignment = TextAlignment.Left,
                     canSort = false,
                     sortingArrowAlignment = TextAlignment.Right,
-                    width = 200,
+                    width = 280,
                     minWidth = 150,
                     autoResize = false,
                     allowToggleVisibility = false
@@ -45,18 +45,8 @@ namespace AssetDanshari
                     headerContent = AssetDanshariStyle.Get().dependenciesHeaderContent2,
                     headerTextAlignment = TextAlignment.Left,
                     canSort = false,
-                    width = 300,
+                    width = 350,
                     minWidth = 100,
-                    autoResize = false,
-                    allowToggleVisibility = true
-                },
-                new MultiColumnHeaderState.Column
-                {
-                    headerContent = AssetDanshariStyle.Get().dependenciesHeaderContent3,
-                    headerTextAlignment = TextAlignment.Left,
-                    canSort = false,
-                    width = 60,
-                    minWidth = 60,
                     autoResize = false,
                     allowToggleVisibility = true
                 }

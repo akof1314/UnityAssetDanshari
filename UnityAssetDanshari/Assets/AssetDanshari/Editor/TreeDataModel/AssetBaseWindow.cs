@@ -29,7 +29,7 @@ namespace AssetDanshari
 
         private void OnGUI()
         {
-            DrawGUI(GUIContent.none, GUIContent.none);
+            DrawGUI(GUIContent.none, GUIContent.none, false);
         }
 
         private void Init()
@@ -66,7 +66,7 @@ namespace AssetDanshari
             m_AssetTreeView = new AssetTreeView(m_TreeViewState, multiColumnHeader, m_AssetTreeModel);
         }
 
-        protected virtual void DrawGUI(GUIContent waiting, GUIContent nothing)
+        protected virtual void DrawGUI(GUIContent waiting, GUIContent nothing, bool expandCollapseComplex)
         {
             var style = AssetDanshariStyle.Get();
             style.InitGUI();
@@ -81,13 +81,13 @@ namespace AssetDanshari
                 else
                 {
                     EditorGUILayout.BeginHorizontal(EditorStyles.toolbar);
-                    if (GUILayout.Button(style.expandAll, EditorStyles.toolbarButton, GUILayout.Width(50f)))
+                    if (expandCollapseComplex)
                     {
-                        m_AssetTreeView.ExpandAll();
+                        DrawToolbarExpandCollapse2();
                     }
-                    if (GUILayout.Button(style.collapseAll, EditorStyles.toolbarButton, GUILayout.Width(50f)))
+                    else
                     {
-                        m_AssetTreeView.CollapseAll();
+                        DrawToolbarExpandCollapse();
                     }
                     m_AssetTreeView.searchString = m_SearchField.OnToolbarGUI(m_AssetTreeView.searchString);
                     if (GUILayout.Button(style.exportCsv, EditorStyles.toolbarButton, GUILayout.Width(70f)))
@@ -113,6 +113,39 @@ namespace AssetDanshari
             return null;
         }
 
+        protected void DrawToolbarExpandCollapse()
+        {
+            if (GUILayout.Button(AssetDanshariStyle.Get().expandAll, EditorStyles.toolbarButton, GUILayout.Width(50f)))
+            {
+                m_AssetTreeView.ExpandAll();
+            }
+            if (GUILayout.Button(AssetDanshariStyle.Get().collapseAll, EditorStyles.toolbarButton, GUILayout.Width(50f)))
+            {
+                m_AssetTreeView.CollapseAll();
+            }
+        }
+
+        protected void DrawToolbarExpandCollapse2()
+        {
+            var style = AssetDanshariStyle.Get();
+            Rect toolBtnRect = GUILayoutUtility.GetRect(style.expandAll, EditorStyles.toolbarDropDown, GUILayout.Width(50f));
+            if (GUI.Button(toolBtnRect, style.expandAll, EditorStyles.toolbarDropDown))
+            {
+                GenericMenu menu = new GenericMenu();
+                menu.AddItem(style.expandAll2, false, m_AssetTreeView.ExpandAll);
+                menu.AddItem(style.expandAll3, false, m_AssetTreeView.ExpandAllExceptLast);
+                menu.DropDown(toolBtnRect);
+            }
+            toolBtnRect = GUILayoutUtility.GetRect(style.collapseAll, EditorStyles.toolbarDropDown, GUILayout.Width(50f));
+            if (GUI.Button(toolBtnRect, style.collapseAll, EditorStyles.toolbarDropDown))
+            {
+                GenericMenu menu = new GenericMenu();
+                menu.AddItem(style.collapseAll2, false, m_AssetTreeView.CollapseAll);
+                menu.AddItem(style.collapseAll3, false, m_AssetTreeView.CollapseOnlyLast);
+                menu.DropDown(toolBtnRect);
+            }
+        }
+
         private void SetCheckPaths(string refPaths, string paths, string commonPaths)
         {
             RemoveNotification();
@@ -120,7 +153,7 @@ namespace AssetDanshari
             if (m_AssetTreeModel.HasData())
             {
                 m_AssetTreeView.Reload();
-                m_AssetTreeView.ExpandAll();
+                m_AssetTreeView.ExpandAllExceptLast();
             }
         }
     }

@@ -1,4 +1,5 @@
-﻿using UnityEngine;
+﻿using System;
+using UnityEngine;
 using System.Collections;
 using System.Collections.Generic;
 using UnityEditor;
@@ -11,6 +12,7 @@ namespace AssetDanshari
         protected AssetTreeModel m_Model;
         protected List<TreeViewItem> m_Rows;
         private int m_Id = 0;
+        private int m_ReverseId = 0;
 
         public AssetTreeView(TreeViewState state, MultiColumnHeader multiColumnHeader, AssetTreeModel model) : base(state, multiColumnHeader)
         {
@@ -30,6 +32,7 @@ namespace AssetDanshari
         protected void ResetAutoID()
         {
             m_Id = 0;
+            m_ReverseId = Int32.MaxValue - 1;
         }
 
         protected int GetAutoID()
@@ -37,11 +40,36 @@ namespace AssetDanshari
             return m_Id++;
         }
 
-        protected void DrawItemWithIcon(Rect cellRect, TreeViewItem item, ref RowGUIArgs args,
-            string displayName, string fileRelativePath, bool deleted)
+        protected int GetAutoReverseID()
         {
-            float num = GetFoldoutIndent(item);
-            cellRect.xMin += num;
+            return m_ReverseId--;
+        }
+
+        protected virtual AssetTreeModel.AssetInfo GetItemAssetInfo(TreeViewItem item)
+        {
+            var item2 = item as AssetTreeViewItem<AssetTreeModel.AssetInfo>;
+            if (item2 != null)
+            {
+                return item2.data;
+            }
+
+            return null;
+        }
+
+        protected void DrawItemWithIcon(Rect cellRect, TreeViewItem item, ref RowGUIArgs args,
+            string displayName, string fileRelativePath, bool deleted, bool contentIndent = true, bool foldoutIndent = false)
+        {
+            if (contentIndent)
+            {
+                float num = GetContentIndent(item);
+                cellRect.xMin += num;
+            }
+
+            if (foldoutIndent)
+            {
+                float num = GetFoldoutIndent(item);
+                cellRect.xMin += num;
+            }
 
             Rect position = cellRect;
             position.width = 16f;
@@ -72,6 +100,134 @@ namespace AssetDanshari
                 position.width = 40f;
                 GUI.DrawTexture(position, AssetDanshariStyle.Get().duplicateDelete.image, ScaleMode.ScaleToFit);
             }
+        }
+
+        protected override void DoubleClickedItem(int id)
+        {
+            var assetInfo = GetItemAssetInfo(FindItem(id, rootItem));
+            if (assetInfo == null || assetInfo.deleted)
+            {
+                return;
+            }
+
+            m_Model.PingObject(assetInfo.fileRelativePath);
+        }
+
+
+        protected void OnContextSetActiveItem(object userdata)
+        {
+            DoubleClickedItem((int)userdata);
+        }
+
+        protected void OnContextExplorerActiveItem(object userdata)
+        {
+            var assetInfo = GetItemAssetInfo((TreeViewItem)userdata);
+            if (assetInfo == null || assetInfo.deleted)
+            {
+                return;
+            }
+
+            EditorUtility.RevealInFinder(assetInfo.fileRelativePath);
+        }
+
+        protected void AddContextMoveComm(GenericMenu menu)
+        {
+            if (m_Model.commonDirs != null)
+            {
+                foreach (var dir in m_Model.commonDirs)
+                {
+                    menu.AddItem(new GUIContent(AssetDanshariStyle.Get().duplicateContextMoveComm + dir.displayName), false, OnContextMoveItem, dir.fileRelativePath);
+                }
+            }
+        }
+
+        private void OnContextMoveItem(object userdata)
+        {
+            if (!HasSelection())
+            {
+                return;
+            }
+
+            var selects = GetSelection();
+            foreach (var select in selects)
+            {
+                var assetInfo = GetItemAssetInfo(FindItem(select, rootItem));
+                if (assetInfo == null || assetInfo.deleted)
+                {
+                    continue;
+                }
+
+                var dirPath = userdata as string;
+                m_Model.SetMoveToCommon(assetInfo, dirPath);
+            }
+        }
+
+        /// <summary>
+        /// 展开全部，除了最后一层
+        /// </summary>
+        public void ExpandAllExceptLast()
+        {
+            ExpandAll();
+            SetExpandedAtLast(rootItem, false);
+        }
+
+        public void CollapseOnlyLast()
+        {
+            SetExpandedAtLast(rootItem, false);
+        }
+
+        public bool SetExpandedAtLast(TreeViewItem item, bool expanded)
+        {
+            if (item.hasChildren)
+            {
+                foreach (var child in item.children)
+                {
+                    if (SetExpandedAtLast(child, expanded))
+                    {
+                        break;
+                    }
+                }
+            }
+            else if (IsReverseItem(item.id))
+            {
+                SetExpanded(item.parent.id, expanded);
+                return true;
+            }
+
+            return false;
+        }
+
+        public bool IsReverseItem(int id)
+        {
+            return id >= m_ReverseId;
+        }
+
+        /// <summary>
+        /// 选中包括了额外显示项
+        /// </summary>
+        /// <returns></returns>
+        public bool IsSelectionContainsReverseItem()
+        {
+            var selects = GetSelection();
+            foreach (var select in selects)
+            {
+                if (IsReverseItem(select))
+                {
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
+        /// <summary>
+        /// 是否选中了多个
+        /// </summary>
+        /// <returns></returns>
+        public bool IsSelectionMulti()
+        {
+            var selects = GetSelection();
+            return selects.Count > 1;
         }
     }
 }

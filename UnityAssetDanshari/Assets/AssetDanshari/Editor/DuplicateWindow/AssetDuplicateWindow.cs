@@ -17,9 +17,9 @@ namespace AssetDanshari
             m_AssetTreeView = new AssetDuplicateTreeView(m_TreeViewState, multiColumnHeader, m_AssetTreeModel);
         }
 
-        protected override void DrawGUI(GUIContent waiting, GUIContent nothing)
+        protected override void DrawGUI(GUIContent waiting, GUIContent nothing, bool expandCollapseComplex)
         {
-            base.DrawGUI(AssetDanshariStyle.Get().duplicateWaiting, AssetDanshariStyle.Get().duplicateNothing);
+            base.DrawGUI(AssetDanshariStyle.Get().duplicateWaiting, AssetDanshariStyle.Get().duplicateNothing, false);
         }
 
         protected override MultiColumnHeaderState CreateMultiColumnHeader()

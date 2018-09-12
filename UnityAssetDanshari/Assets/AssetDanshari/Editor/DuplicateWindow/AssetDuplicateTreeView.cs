@@ -17,7 +17,7 @@ namespace AssetDanshari
 
         protected override TreeViewItem BuildRoot()
         {
-            var root = new TreeViewItem { id = 0, depth = -1, displayName = "Root" };
+            var root = new TreeViewItem { id = -1, depth = -1, displayName = "Root" };
 
             ResetAutoID();
             if (model != null && model.data != null)
@@ -39,6 +39,16 @@ namespace AssetDanshari
 
             SetupDepthsFromParentsAndChildren(root);
             return root;
+        }
+
+        protected override AssetTreeModel.AssetInfo GetItemAssetInfo(TreeViewItem item)
+        {
+            var item2 = item as AssetTreeViewItem<AssetDuplicateTreeModel.FileMd5Info>;
+            if (item2 != null)
+            {
+                return item2.data;
+            }
+            return null;
         }
 
         protected override void RowGUI(RowGUIArgs args)
@@ -63,7 +73,7 @@ namespace AssetDanshari
             switch (column)
             {
                 case 0:
-                    DrawItemWithIcon(cellRect, item, ref args, info.displayName, info.fileRelativePath, info.deleted);
+                    DrawItemWithIcon(cellRect, item, ref args, info.displayName, info.fileRelativePath, info.deleted, false, true);
                     break;
                 case 1:
                     DefaultGUI.Label(cellRect, info.fileRelativePath, args.selected, args.focused);
@@ -82,17 +92,6 @@ namespace AssetDanshari
             return false;
         }
 
-        protected override void DoubleClickedItem(int id)
-        {
-            var item = FindItem(id, rootItem) as AssetTreeViewItem<AssetDuplicateTreeModel.FileMd5Info>;
-            if (item == null || item.data.deleted)
-            {
-                return;
-            }
-
-            model.PingObject(item.data.fileRelativePath);
-        }
-
         protected override void ContextClickedItem(int id)
         {
             var item = FindItem(id, rootItem) as AssetTreeViewItem<AssetDuplicateTreeModel.FileMd5Info>;
@@ -106,29 +105,9 @@ namespace AssetDanshari
             menu.AddItem(AssetDanshariStyle.Get().duplicateContextExplorer, false, OnContextExplorerActiveItem, item);
             menu.AddSeparator(String.Empty);
             menu.AddItem(AssetDanshariStyle.Get().duplicateContextUseThis, false, OnContextUseThisItem, item);
-            if (model.dirs != null)
-            {
-                foreach (var dir in model.dirs)
-                {
-                    menu.AddItem(new GUIContent(AssetDanshariStyle.Get().duplicateContextMoveComm + dir.displayName), false, OnContextMoveItem, dir.fileRelativePath);
-                }
-            }
+            AddContextMoveComm(menu);
             menu.AddItem(AssetDanshariStyle.Get().duplicateContextDelOther, false, OnContextRemoveAllOther, item);
             menu.ShowAsContext();
-        }
-
-        private void OnContextSetActiveItem(object userdata)
-        {
-            DoubleClickedItem((int)userdata);
-        }
-
-        private void OnContextExplorerActiveItem(object userdata)
-        {
-            var item = userdata as AssetTreeViewItem<AssetDuplicateTreeModel.FileMd5Info>;
-            if (item != null)
-            {
-                EditorUtility.RevealInFinder(item.data.fileRelativePath);
-            }
         }
 
         private void OnContextUseThisItem(object userdata)
@@ -139,22 +118,6 @@ namespace AssetDanshari
                 var itemParent = item.parent as AssetTreeViewItem<IGrouping<string, AssetDuplicateTreeModel.FileMd5Info>>;
                 model.SetUseThis(itemParent.data, item.data);
                 Repaint();
-            }
-        }
-
-        private void OnContextMoveItem(object userdata)
-        {
-            var selects = GetSelection();
-            if (selects.Count > 0)
-            {
-                var item = FindItem(selects[0], rootItem) as AssetTreeViewItem<AssetDuplicateTreeModel.FileMd5Info>;
-                if (item == null)
-                {
-                    return;
-                }
-
-                var dirPath = userdata as string;
-                model.SetMoveToCommon(item.data, dirPath);
             }
         }
 
