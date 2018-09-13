@@ -131,50 +131,5 @@ namespace AssetDanshari
                 Repaint();
             }
         }
-
-        #region  数据变化
-
-        protected override bool OnWatcherDeletedAssetsEvent(string[] deletedAssets)
-        {
-            base.OnWatcherDeletedAssetsEvent(deletedAssets);
-            if (m_WatcherItems.Count > 0)
-            {
-                foreach (var item in m_WatcherItems)
-                {
-                    var assetInfo = GetItemAssetInfo(item);
-                    if (assetInfo != null)
-                    {
-                        assetInfo.deleted = true;
-                    }
-                }
-                return true;
-            }
-            return false;
-        }
-
-        protected override bool OnWatcherMovedAssetsEvent(string[] movedFromAssetPaths, string[] movedAssets)
-        {
-            base.OnWatcherDeletedAssetsEvent(movedFromAssetPaths);
-            if (m_WatcherItems.Count > 0)
-            {
-                var movedFromAssetPathsList = movedFromAssetPaths.ToList();
-                foreach (var item in m_WatcherItems)
-                {
-                    var assetInfo = GetItemAssetInfo(item);
-                    if (assetInfo != null)
-                    {
-                        int idx = movedFromAssetPathsList.IndexOf(assetInfo.fileRelativePath);
-                        if (idx != -1)
-                        {
-                            assetInfo.fileRelativePath = movedAssets[idx];
-                        }
-                    }
-                }
-                return true;
-            }
-            return false;
-        }
-
-        #endregion
     }
 }

@@ -1,4 +1,6 @@
 ﻿using System;
+using System.IO;
+using System.Linq;
 using UnityEngine;
 using UnityEditor;
 using UnityEditor.IMGUI.Controls;
@@ -19,9 +21,9 @@ namespace AssetDanshari
             var root = new TreeViewItem { id = -1, depth = -1, displayName = "Root" };
 
             ResetAutoID();
-            if (model != null && model.data != null && model.data.dirs != null)
+            if (model != null && model.data != null)
             {
-                foreach (var info in model.data.dirs)
+                foreach (var info in model.data.children)
                 {
                     BuildDataDir(info, root);
                 }
@@ -31,34 +33,34 @@ namespace AssetDanshari
             return root;
         }
 
-        private void BuildDataDir(AssetDependenciesTreeModel.DirInfo dirInfo, TreeViewItem parent)
+        private void BuildDataDir(AssetTreeModel.AssetInfo dirInfo, TreeViewItem parent)
         {
-            var dirItem = new AssetTreeViewItem<AssetDependenciesTreeModel.DirInfo>(GetAutoID(), -1, dirInfo.displayName, dirInfo);
-            dirItem.icon = AssetDanshariStyle.Get().folderIcon;
-            parent.AddChild(dirItem);
-
-            if (dirInfo.dirs != null)
+            var info = dirInfo as AssetDependenciesTreeModel.FileBeDependInfo;
+            if (info != null)
             {
-                foreach (var info in dirInfo.dirs)
+                var item = new AssetTreeViewItem<AssetDependenciesTreeModel.FileBeDependInfo>(GetAutoID(), -1, info.displayName, info);
+                parent.AddChild(item);
+
+                if (info.beDependPaths != null)
                 {
-                    BuildDataDir(info, dirItem);
+                    foreach (var beDependPath in info.beDependPaths)
+                    {
+                        var item2 = new AssetTreeViewItem<AssetTreeModel.AssetInfo>(GetAutoReverseID(), -1, String.Empty, beDependPath);
+                        item.AddChild(item2);
+                    }
                 }
             }
-
-            if (dirInfo.files != null)
+            else
             {
-                foreach (var info in dirInfo.files)
-                {
-                    var item = new AssetTreeViewItem<AssetDependenciesTreeModel.FileBeDependInfo>(GetAutoID(), -1, info.displayName, info);
-                    dirItem.AddChild(item);
+                var dirItem = new AssetTreeViewItem<AssetTreeModel.AssetInfo>(GetAutoID(), -1, dirInfo.displayName, dirInfo);
+                dirItem.icon = AssetDanshariStyle.Get().folderIcon;
+                parent.AddChild(dirItem);
 
-                    if (info.beDependPaths != null)
+                if (dirInfo.hasChildren)
+                {
+                    foreach (var childInfo in dirInfo.children)
                     {
-                        foreach (var beDependPath in info.beDependPaths)
-                        {
-                            var item2 = new AssetTreeViewItem<AssetTreeModel.AssetInfo>(GetAutoReverseID(), -1, String.Empty, beDependPath);
-                            item.AddChild(item2);
-                        }
+                        BuildDataDir(childInfo, dirItem);
                     }
                 }
             }
@@ -70,11 +72,6 @@ namespace AssetDanshari
             if (item2 != null)
             {
                 return item2.data;
-            }
-            var item3 = item as AssetTreeViewItem<AssetDependenciesTreeModel.DirInfo>;
-            if (item3 != null)
-            {
-                return item3.data;
             }
             return base.GetItemAssetInfo(item);
         }
@@ -92,7 +89,7 @@ namespace AssetDanshari
             }
 
             var item2 = args.item as AssetTreeViewItem<AssetTreeModel.AssetInfo>;
-            if (item2 != null)
+            if (item2 != null && IsReverseItem(item2.id))
             {
                 for (int i = 0; i < args.GetNumVisibleColumns(); ++i)
                 {
@@ -169,5 +166,42 @@ namespace AssetDanshari
                 menu.ShowAsContext();
             }
         }
+
+        #region  数据变化
+        
+        protected override bool OnWatcherMovedAssetsEvent(string[] movedFromAssetPaths, string[] movedAssets)
+        {
+            bool ret = base.OnWatcherMovedAssetsEvent(movedFromAssetPaths, movedAssets);
+            if (!ret)
+            {
+                return false;
+            }
+
+            // 先移除
+            foreach (var watcherItem in watcherItems)
+            {
+                if (watcherItem.parent != null)
+                {
+                    watcherItem.parent.children.Remove(watcherItem);
+                }
+
+                watcherItem.parent = null;
+
+                var assetInfo = GetItemAssetInfo(watcherItem);
+                if (assetInfo != null)
+                {
+                    if (assetInfo.parent != null)
+                    {
+                        assetInfo.parent.children.Remove(assetInfo);
+                    }
+
+                    assetInfo.parent = null;
+                }
+            }
+
+            return true;
+        }
+
+        #endregion
     }
 }

@@ -25,13 +25,7 @@ namespace AssetDanshari
             }
         }
 
-        public class DirInfo : AssetInfo
-        {
-            public List<DirInfo> dirs;
-            public List<FileBeDependInfo> files;
-        }
-
-        public DirInfo data { get; private set; }
+        public AssetInfo data { get; private set; }
 
         public override bool HasData()
         {
@@ -42,7 +36,7 @@ namespace AssetDanshari
         {
             data = null;
             base.SetDataPaths(refPathStr, pathStr, commonPathStr);
-            var dirInfo = new DirInfo();
+            var dirInfo = new AssetInfo();
             var style = AssetDanshariStyle.Get();
 
             for (var i = 0; i < resPaths.Length; i++)
@@ -104,19 +98,15 @@ namespace AssetDanshari
             EditorUtility.ClearProgressBar();
         }
 
-        private void LoadDirData(string path, DirInfo dirInfo)
+        private void LoadDirData(string path, AssetInfo dirInfo)
         {
             var allDirs = Directory.GetDirectories(path, "*", SearchOption.TopDirectoryOnly);
             foreach (var allDir in allDirs)
             {
-                DirInfo info = new DirInfo();
+                AssetInfo info = new AssetInfo();
                 info.fileRelativePath = PathToStandardized(allDir);
                 info.displayName = Path.GetFileName(allDir);
-                if (dirInfo.dirs == null)
-                {
-                    dirInfo.dirs = new List<DirInfo>();
-                }
-                dirInfo.dirs.Add(info);
+                dirInfo.AddChild(info);
 
                 LoadDirData(info.fileRelativePath, info);
             }
@@ -135,27 +125,23 @@ namespace AssetDanshari
                 info.fileRelativePath = FullPathToRelative(info.filePath);
                 info.displayName = fileInfo.Name;
                 info.regex = new Regex(AssetDatabase.AssetPathToGUID(info.fileRelativePath));
-                if (dirInfo.files == null)
-                {
-                    dirInfo.files = new List<FileBeDependInfo>();
-                }
-                dirInfo.files.Add(info);
+                dirInfo.AddChild(info);
             }
         }
 
-        private void CheckFileMatch(DirInfo dirInfo, AssetInfo filePath, string fileText)
+        private void CheckFileMatch(AssetInfo dirInfo, AssetInfo filePath, string fileText)
         {
-            if (dirInfo.dirs != null)
+            if (dirInfo.hasChildren)
             {
-                foreach (var info in dirInfo.dirs)
+                foreach (var info in dirInfo.children)
                 {
                     CheckFileMatch(info, filePath, fileText);
                 }
             }
-
-            if (dirInfo.files != null)
+            else
             {
-                foreach (var info in dirInfo.files)
+                var info = dirInfo as FileBeDependInfo;
+                if (info != null)
                 {
                     if (info.regex.IsMatch(fileText))
                     {

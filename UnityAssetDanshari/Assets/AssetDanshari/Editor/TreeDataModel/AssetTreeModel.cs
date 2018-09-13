@@ -10,10 +10,31 @@ namespace AssetDanshari
     {
         public class AssetInfo
         {
+            public int id;
             public string fileRelativePath;
             public string displayName;
             public bool deleted;
             public bool added;
+            public AssetInfo parent;
+            public List<AssetInfo> children;
+
+            public bool hasChildren
+            {
+                get
+                {
+                    return children != null && children.Count > 0;
+                }
+            }
+
+            public void AddChild(AssetInfo info)
+            {
+                if (children == null)
+                {
+                    children = new List<AssetInfo>();
+                }
+                children.Add(info);
+                info.parent = this;
+            }
         }
 
         /// <summary>
@@ -39,6 +60,11 @@ namespace AssetDanshari
         public virtual bool HasData()
         {
             return false;
+        }
+
+        public virtual AssetInfo FindData(int id)
+        {
+            return null;
         }
 
         public virtual void SetDataPaths(string refPathStr, string pathStr, string commonPathStr)

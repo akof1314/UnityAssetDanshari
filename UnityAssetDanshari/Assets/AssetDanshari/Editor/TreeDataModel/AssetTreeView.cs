@@ -1,7 +1,8 @@
 ﻿using System;
 using UnityEngine;
-using System.Collections;
 using System.Collections.Generic;
+using System.IO;
+using System.Linq;
 using UnityEditor;
 using UnityEditor.IMGUI.Controls;
 
@@ -12,7 +13,12 @@ namespace AssetDanshari
         protected AssetTreeModel m_Model;
         private int m_Id = 0;
         private int m_ReverseId = 0;
-        protected List<TreeViewItem> m_WatcherItems = new List<TreeViewItem>();
+        private List<TreeViewItem> m_WatcherItems = new List<TreeViewItem>();
+
+        protected List<TreeViewItem> watcherItems
+        {
+            get { return m_WatcherItems; }
+        }
 
         public AssetTreeView(TreeViewState state, MultiColumnHeader multiColumnHeader, AssetTreeModel model) : base(state, multiColumnHeader)
         {
@@ -278,6 +284,8 @@ namespace AssetDanshari
             }
             if (OnWatcherMovedAssetsEvent(movedFromAssetPaths, movedAssets))
             {
+                SetExpanded(rootItem.id, false);
+                SetExpanded(rootItem.id, true);
                 Repaint();
             }
         }
@@ -291,6 +299,18 @@ namespace AssetDanshari
         {
             m_WatcherItems.Clear();
             FindItemsByAssetPaths(rootItem, deletedAssets, m_WatcherItems);
+            if (m_WatcherItems.Count > 0)
+            {
+                foreach (var item in m_WatcherItems)
+                {
+                    var assetInfo = GetItemAssetInfo(item);
+                    if (assetInfo != null)
+                    {
+                        assetInfo.deleted = true;
+                    }
+                }
+                return true;
+            }
             return false;
         }
 
@@ -298,6 +318,27 @@ namespace AssetDanshari
         {
             m_WatcherItems.Clear();
             FindItemsByAssetPaths(rootItem, movedFromAssetPaths, m_WatcherItems);
+            if (m_WatcherItems.Count > 0)
+            {
+                var movedFromAssetPathsList = movedFromAssetPaths.ToList();
+                foreach (var item in m_WatcherItems)
+                {
+                    var assetInfo = GetItemAssetInfo(item);
+                    if (assetInfo != null)
+                    {
+                        int idx = movedFromAssetPathsList.IndexOf(assetInfo.fileRelativePath);
+                        if (idx != -1)
+                        {
+                            assetInfo.fileRelativePath = movedAssets[idx];
+                            assetInfo.displayName = Path.GetFileName(assetInfo.fileRelativePath);
+                        }
+                    }
+                }
+                
+                // 移除掉额外显示的项，因为不需要变动
+                m_WatcherItems.RemoveAll(item => IsReverseItem(item.id));
+                return true;
+            }
             return false;
         }
 
@@ -328,6 +369,36 @@ namespace AssetDanshari
                     FindItemsByAssetPaths(child, assetPaths, result);
                 }
             }
+        }
+
+        protected TreeViewItem FindItemByAssetPath(TreeViewItem searchFromThisItem, string assetPath)
+        {
+            if (searchFromThisItem == null)
+            {
+                return null;
+            }
+
+            var assetInfo = GetItemAssetInfo(searchFromThisItem);
+            if (assetInfo != null)
+            {
+                if (assetPath == assetInfo.fileRelativePath)
+                {
+                    return searchFromThisItem;
+                }
+            }
+
+            if (searchFromThisItem.hasChildren)
+            {
+                foreach (var child in searchFromThisItem.children)
+                {
+                    var item = FindItemByAssetPath(child, assetPath);
+                    if (item != null)
+                    {
+                        return item;
+                    }
+                }
+            }
+            return null;
         }
 
         #endregion
