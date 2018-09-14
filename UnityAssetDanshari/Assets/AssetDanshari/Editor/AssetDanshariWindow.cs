@@ -105,7 +105,8 @@ namespace AssetDanshari
             bool valueChanged = EditorGUI.EndChangeCheck();
             if (GUI.Button(rect4, style.assetReferenceCheckRef))
             {
-
+                AssetBaseWindow.CheckPaths<AssetReferenceWindow>(info.referenceFolder,
+                    info.assetFolder, info.assetCommonFolder);
             }
 
             rect2.y += EditorGUIUtility.singleLineHeight + 2;

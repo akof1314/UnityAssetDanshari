@@ -5,13 +5,13 @@ using UnityEditor.IMGUI.Controls;
 
 namespace AssetDanshari
 {
-    public class AssetDependenciesTreeView : AssetTreeView
+    public class AssetReferenceTreeView : AssetTreeView
     {
-        private AssetDependenciesTreeModel model { get; set; }
+        private AssetReferenceTreeModel model { get; set; }
 
-        public AssetDependenciesTreeView(TreeViewState state, MultiColumnHeader multiColumnHeader, AssetTreeModel model) : base(state, multiColumnHeader, model)
+        public AssetReferenceTreeView(TreeViewState state, MultiColumnHeader multiColumnHeader, AssetTreeModel model) : base(state, multiColumnHeader, model)
         {
-            this.model = model as AssetDependenciesTreeModel;
+            this.model = model as AssetReferenceTreeModel;
         }
 
         protected override void CellGUI(Rect cellRect, AssetTreeViewItem<AssetTreeModel.AssetInfo> item, int column, ref RowGUIArgs args)
@@ -37,6 +37,12 @@ namespace AssetDanshari
                         {
                             DefaultGUI.Label(cellRect, info.children.Count.ToString(), args.selected, args.focused);
                         }
+                    }
+                    break;
+                case 2:
+                    if (info.isExtra)
+                    {
+                        DefaultGUI.Label(cellRect, info.bindObj as string, args.selected, args.focused);
                     }
                     break;
             }

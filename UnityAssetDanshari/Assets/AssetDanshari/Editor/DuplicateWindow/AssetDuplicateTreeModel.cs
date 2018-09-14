@@ -87,7 +87,7 @@ namespace AssetDanshari
 
                 foreach (var member in group)
                 {
-                    AssetInfo info = new AssetInfo(GetAutoId(), FullPathToRelative(member.filePath), Path.GetFileName(member.filePath));
+                    AssetInfo info = GenAssetInfo(FullPathToRelative(member.filePath));
                     info.bindObj = member;
                     dirInfo.AddChild(info);
 

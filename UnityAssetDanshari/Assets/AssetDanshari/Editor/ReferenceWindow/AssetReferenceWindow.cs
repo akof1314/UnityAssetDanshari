@@ -3,23 +3,23 @@ using UnityEngine;
 
 namespace AssetDanshari
 {
-    public class AssetDependenciesWindow : AssetBaseWindow
+    public class AssetReferenceWindow : AssetBaseWindow
     {
         private void Awake()
         {
-            titleContent = AssetDanshariStyle.Get().dependenciesTitle;
+            titleContent = AssetDanshariStyle.Get().referenceTitle;
             minSize = new Vector2(727f, 331f);
         }
 
         protected override void InitTree(MultiColumnHeader multiColumnHeader)
         {
-            m_AssetTreeModel = new AssetDependenciesTreeModel();
-            m_AssetTreeView = new AssetDependenciesTreeView(m_TreeViewState, multiColumnHeader, m_AssetTreeModel);
+            m_AssetTreeModel = new AssetReferenceTreeModel();
+            m_AssetTreeView = new AssetReferenceTreeView(m_TreeViewState, multiColumnHeader, m_AssetTreeModel);
         }
 
         protected override void DrawGUI(GUIContent waiting, GUIContent nothing, bool expandCollapseComplex)
         {
-            base.DrawGUI(AssetDanshariStyle.Get().dependenciesWaiting, AssetDanshariStyle.Get().dependenciesNothing, true);
+            base.DrawGUI(AssetDanshariStyle.Get().referenceWaiting, AssetDanshariStyle.Get().referenceNothing, true);
         }
 
         protected override MultiColumnHeaderState CreateMultiColumnHeader()
@@ -28,7 +28,7 @@ namespace AssetDanshari
             {
                 new MultiColumnHeaderState.Column
                 {
-                    headerContent = AssetDanshariStyle.Get().dependenciesHeaderContent,
+                    headerContent = AssetDanshariStyle.Get().referenceHeaderContent,
                     headerTextAlignment = TextAlignment.Left,
                     canSort = false,
                     sortingArrowAlignment = TextAlignment.Right,
@@ -39,10 +39,20 @@ namespace AssetDanshari
                 },
                 new MultiColumnHeaderState.Column
                 {
-                    headerContent = AssetDanshariStyle.Get().dependenciesHeaderContent2,
+                    headerContent = AssetDanshariStyle.Get().referenceHeaderContent2,
                     headerTextAlignment = TextAlignment.Left,
                     canSort = false,
-                    width = 350,
+                    width = 300,
+                    minWidth = 100,
+                    autoResize = false,
+                    allowToggleVisibility = true
+                },
+                new MultiColumnHeaderState.Column
+                {
+                    headerContent = AssetDanshariStyle.Get().referenceHeaderContent3,
+                    headerTextAlignment = TextAlignment.Left,
+                    canSort = false,
+                    width = 100,
                     minWidth = 100,
                     autoResize = false,
                     allowToggleVisibility = true

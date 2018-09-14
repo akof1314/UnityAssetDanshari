@@ -38,7 +38,13 @@ namespace AssetDanshari
             public GUIContent dependenciesNothing = new GUIContent("资源文件夹没有任何数据");
             public GUIContent dependenciesHeaderContent = new GUIContent("名称");
             public GUIContent dependenciesHeaderContent2 = new GUIContent("被引用的路径");
-            public GUIContent dependenciesHeaderContent3 = new GUIContent("次数");
+
+            public GUIContent referenceTitle = new GUIContent("引用查找");
+            public GUIContent referenceWaiting = new GUIContent("等待进行引用查找");
+            public GUIContent referenceNothing = new GUIContent("文件夹没有任何数据");
+            public GUIContent referenceHeaderContent = new GUIContent("名称");
+            public GUIContent referenceHeaderContent2 = new GUIContent("引用的资源");
+            public GUIContent referenceHeaderContent3 = new GUIContent("隶属");
 
             public string progressTitle = "正在处理";
             public string errorTitle = "错误信息";

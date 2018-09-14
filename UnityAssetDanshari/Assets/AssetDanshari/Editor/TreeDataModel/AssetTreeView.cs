@@ -350,7 +350,7 @@ namespace AssetDanshari
 
         protected virtual bool OnWatcherImportedAssetsEvent(string[] importedAssets, bool resortItem)
         {
-            if (importedAssets.Length == 0 || !resortItem)
+            if (importedAssets.Length == 0 || !resortItem || rootItem == null)
             {
                 return false;
             }
