@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Linq;
 using UnityEditor;
 using UnityEditor.IMGUI.Controls;
 using UnityEngine;
@@ -15,61 +14,19 @@ namespace AssetDanshari
             this.model = model as AssetDuplicateTreeModel;
         }
 
-        protected override TreeViewItem BuildRoot()
+        protected override void CellGUI(Rect cellRect, AssetTreeViewItem<AssetTreeModel.AssetInfo> item, int column, ref RowGUIArgs args)
         {
-            var root = new TreeViewItem { id = -1, depth = -1, displayName = "Root" };
-
-            ResetAutoID();
-            if (model != null && model.data != null)
+            var info = item.data;
+            if (info.isExtra)
             {
-                var groups = model.data;
-                foreach (var group in groups)
+                if (column == 0)
                 {
-                    var groupItem = new AssetTreeViewItem<IGrouping<string, AssetDuplicateTreeModel.FileMd5Info>>(GetAutoID(), -1,
-                        String.Format(AssetDanshariStyle.Get().duplicateGroup, group.Count()), group);
-                    root.AddChild(groupItem);
-
-                    foreach (var info in group)
-                    {
-                        var infoItem = new AssetTreeViewItem<AssetDuplicateTreeModel.FileMd5Info>(GetAutoID(), -1, info.displayName, info);
-                        groupItem.AddChild(infoItem);
-                    }
+                    DefaultGUI.Label(cellRect, info.displayName, args.selected, args.focused);
                 }
-            }
-
-            SetupDepthsFromParentsAndChildren(root);
-            return root;
-        }
-
-        protected override AssetTreeModel.AssetInfo GetItemAssetInfo(TreeViewItem item)
-        {
-            var item2 = item as AssetTreeViewItem<AssetDuplicateTreeModel.FileMd5Info>;
-            if (item2 != null)
-            {
-                return item2.data;
-            }
-            return null;
-        }
-
-        protected override void RowGUI(RowGUIArgs args)
-        {
-            var item = args.item as AssetTreeViewItem<AssetDuplicateTreeModel.FileMd5Info>;
-            if (item == null)
-            {
-                base.RowGUI(args);
                 return;
             }
 
-            for (int i = 0; i < args.GetNumVisibleColumns(); ++i)
-            {
-                CellGUI(args.GetCellRect(i), item, args.GetColumn(i), ref args);
-            }
-        }
-
-        private void CellGUI(Rect cellRect, AssetTreeViewItem<AssetDuplicateTreeModel.FileMd5Info> item, int column, ref RowGUIArgs args)
-        {
-            var info = item.data;
-
+            AssetDuplicateTreeModel.FileMd5Info md5Info = info.bindObj as AssetDuplicateTreeModel.FileMd5Info;
             switch (column)
             {
                 case 0:
@@ -79,10 +36,10 @@ namespace AssetDanshari
                     DefaultGUI.Label(cellRect, info.fileRelativePath, args.selected, args.focused);
                     break;
                 case 2:
-                    DefaultGUI.Label(cellRect, info.fileLength, args.selected, args.focused);
+                    DefaultGUI.Label(cellRect, md5Info.fileLength, args.selected, args.focused);
                     break;
                 case 3:
-                    DefaultGUI.Label(cellRect, info.fileTime, args.selected, args.focused);
+                    DefaultGUI.Label(cellRect, md5Info.fileTime, args.selected, args.focused);
                     break;
             }
         }
@@ -94,8 +51,8 @@ namespace AssetDanshari
 
         protected override void ContextClickedItem(int id)
         {
-            var item = FindItem(id, rootItem) as AssetTreeViewItem<AssetDuplicateTreeModel.FileMd5Info>;
-            if (item == null || item.data.deleted)
+            var item = FindItem(id, rootItem) as AssetTreeViewItem<AssetTreeModel.AssetInfo>;
+            if (item == null || item.data.deleted || item.data.isExtra)
             {
                 return;
             }
@@ -112,10 +69,10 @@ namespace AssetDanshari
 
         private void OnContextUseThisItem(object userdata)
         {
-            var item = userdata as AssetTreeViewItem<AssetDuplicateTreeModel.FileMd5Info>;
+            var item = userdata as AssetTreeViewItem<AssetTreeModel.AssetInfo>;
             if (item != null)
             {
-                var itemParent = item.parent as AssetTreeViewItem<IGrouping<string, AssetDuplicateTreeModel.FileMd5Info>>;
+                var itemParent = item.parent as AssetTreeViewItem<AssetTreeModel.AssetInfo>;
                 model.SetUseThis(itemParent.data, item.data);
                 Repaint();
             }
@@ -123,10 +80,10 @@ namespace AssetDanshari
 
         private void OnContextRemoveAllOther(object userdata)
         {
-            var item = userdata as AssetTreeViewItem<AssetDuplicateTreeModel.FileMd5Info>;
+            var item = userdata as AssetTreeViewItem<AssetTreeModel.AssetInfo>;
             if (item != null)
             {
-                var itemParent = item.parent as AssetTreeViewItem<IGrouping<string, AssetDuplicateTreeModel.FileMd5Info>>;
+                var itemParent = item.parent as AssetTreeViewItem<AssetTreeModel.AssetInfo>;
                 model.SetRemoveAllOther(itemParent.data, item.data);
                 Repaint();
             }

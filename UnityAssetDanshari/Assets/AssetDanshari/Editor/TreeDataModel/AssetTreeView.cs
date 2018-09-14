@@ -11,8 +11,6 @@ namespace AssetDanshari
     public class AssetTreeView : TreeView
     {
         protected AssetTreeModel m_Model;
-        private int m_Id = 0;
-        private int m_ReverseId = 0;
         private List<TreeViewItem> m_WatcherItems = new List<TreeViewItem>();
 
         protected List<TreeViewItem> watcherItems
@@ -42,24 +40,36 @@ namespace AssetDanshari
 
         protected override TreeViewItem BuildRoot()
         {
-            return null;
+            var root = new TreeViewItem { id = -1, depth = -1, displayName = "Root" };
+
+            if (m_Model != null && m_Model.data != null)
+            {
+                foreach (var info in m_Model.data.children)
+                {
+                    BuildDataDir(info, root);
+                }
+            }
+
+            SetupDepthsFromParentsAndChildren(root);
+            return root;
         }
 
-
-        protected void ResetAutoID()
+        private void BuildDataDir(AssetTreeModel.AssetInfo dirInfo, TreeViewItem parent)
         {
-            m_Id = 0;
-            m_ReverseId = Int32.MaxValue - 1;
-        }
+            var dirItem = new AssetTreeViewItem<AssetTreeModel.AssetInfo>(dirInfo.id, -1, dirInfo.displayName, dirInfo);
+            if (dirInfo.isFolder)
+            {
+                dirItem.icon = AssetDanshariStyle.Get().folderIcon;
+            }
+            parent.AddChild(dirItem);
 
-        protected int GetAutoID()
-        {
-            return m_Id++;
-        }
-
-        protected int GetAutoReverseID()
-        {
-            return m_ReverseId--;
+            if (dirInfo.hasChildren)
+            {
+                foreach (var childInfo in dirInfo.children)
+                {
+                    BuildDataDir(childInfo, dirItem);
+                }
+            }
         }
 
         protected virtual AssetTreeModel.AssetInfo GetItemAssetInfo(TreeViewItem item)
@@ -71,6 +81,26 @@ namespace AssetDanshari
             }
 
             return null;
+        }
+
+        protected override void RowGUI(RowGUIArgs args)
+        {
+            var item = args.item as AssetTreeViewItem<AssetTreeModel.AssetInfo>;
+            if (item != null)
+            {
+                for (int i = 0; i < args.GetNumVisibleColumns(); ++i)
+                {
+                    CellGUI(args.GetCellRect(i), item, args.GetColumn(i), ref args);
+                }
+                return;
+            }
+
+            base.RowGUI(args);
+        }
+
+        protected virtual void CellGUI(Rect cellRect, AssetTreeViewItem<AssetTreeModel.AssetInfo> item, int column,
+            ref RowGUIArgs args)
+        {
         }
 
         protected void DrawItemWithIcon(Rect cellRect, TreeViewItem item, ref RowGUIArgs args,
@@ -139,7 +169,7 @@ namespace AssetDanshari
         protected void OnContextExplorerActiveItem(object userdata)
         {
             var assetInfo = GetItemAssetInfo((TreeViewItem)userdata);
-            if (assetInfo == null || assetInfo.deleted)
+            if (assetInfo == null || assetInfo.deleted || string.IsNullOrEmpty(assetInfo.fileRelativePath))
             {
                 return;
             }
@@ -205,7 +235,7 @@ namespace AssetDanshari
                     }
                 }
             }
-            else if (IsReverseItem(item.id))
+            else if (IsExtraItem(item))
             {
                 SetExpanded(item.parent.id, expanded);
                 return true;
@@ -214,9 +244,19 @@ namespace AssetDanshari
             return false;
         }
 
-        public bool IsReverseItem(int id)
+        public bool IsExtraItem(int id)
         {
-            return id >= m_ReverseId;
+            return IsExtraItem(FindItem(id, rootItem));
+        }
+
+        public bool IsExtraItem(TreeViewItem item)
+        {
+            var assetInfo = GetItemAssetInfo(item);
+            if (assetInfo != null)
+            {
+                return assetInfo.isExtra;
+            }
+            return false;
         }
 
         /// <summary>
@@ -228,7 +268,7 @@ namespace AssetDanshari
             var selects = GetSelection();
             foreach (var select in selects)
             {
-                if (IsReverseItem(select))
+                if (IsExtraItem(select))
                 {
                     return true;
                 }
@@ -245,6 +285,27 @@ namespace AssetDanshari
         {
             var selects = GetSelection();
             return selects.Count > 1;
+        }
+
+        /// <summary>
+        /// 排序
+        /// </summary>
+        /// <param name="sortFromThisItem"></param>
+        public void SortTreeViewNaturalCompare(TreeViewItem sortFromThisItem)
+        {
+            if (sortFromThisItem == null)
+            {
+                return;
+            }
+
+            if (sortFromThisItem.hasChildren)
+            {
+                sortFromThisItem.children.Sort((a, b) => EditorUtility.NaturalCompare(a.displayName, b.displayName));
+                foreach (var child in sortFromThisItem.children)
+                {
+                    SortTreeViewNaturalCompare(child);
+                }
+            }
         }
 
         #region  数据变化
@@ -292,6 +353,26 @@ namespace AssetDanshari
 
         protected virtual bool OnWatcherImportedAssetsEvent(string[] importedAssets)
         {
+            if (importedAssets.Length == 0)
+            {
+                return false;
+            }
+
+            Array.Sort(importedAssets, EditorUtility.NaturalCompare);
+            foreach (var importedAsset in importedAssets)
+            {
+                var item = FindItemByAssetPath(rootItem, Path.GetDirectoryName(importedAsset));
+                if (item == null)
+                {
+                    continue;
+                }
+                var assetInfo = GetItemAssetInfo(item);
+                if (assetInfo == null)
+                {
+                    continue;
+                }
+
+            }
             return false;
         }
 
@@ -318,6 +399,7 @@ namespace AssetDanshari
         {
             m_WatcherItems.Clear();
             FindItemsByAssetPaths(rootItem, movedFromAssetPaths, m_WatcherItems);
+            List<string> importedAssets = movedAssets.ToList();
             if (m_WatcherItems.Count > 0)
             {
                 var movedFromAssetPathsList = movedFromAssetPaths.ToList();
@@ -331,14 +413,19 @@ namespace AssetDanshari
                         {
                             assetInfo.fileRelativePath = movedAssets[idx];
                             assetInfo.displayName = Path.GetFileName(assetInfo.fileRelativePath);
+                            importedAssets.Remove(movedAssets[idx]);
                         }
                     }
                 }
                 
                 // 移除掉额外显示的项，因为不需要变动
-                m_WatcherItems.RemoveAll(item => IsReverseItem(item.id));
+                m_WatcherItems.RemoveAll(IsExtraItem);
+                // 剩余的做导入处理
+                OnWatcherImportedAssetsEvent(importedAssets.ToArray());
                 return true;
             }
+
+            OnWatcherImportedAssetsEvent(importedAssets.ToArray());
             return false;
         }
 

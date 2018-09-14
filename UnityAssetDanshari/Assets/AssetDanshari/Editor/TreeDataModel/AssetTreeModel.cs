@@ -13,10 +13,22 @@ namespace AssetDanshari
             public int id;
             public string fileRelativePath;
             public string displayName;
+            public bool isFolder;
+            public bool isExtra;
+            public object bindObj;
+
             public bool deleted;
             public bool added;
+
             public AssetInfo parent;
             public List<AssetInfo> children;
+
+            public AssetInfo(int id, string fileRelativePath, string displayName)
+            {
+                this.id = id;
+                this.fileRelativePath = fileRelativePath;
+                this.displayName = displayName;
+            }
 
             public bool hasChildren
             {
@@ -38,6 +50,11 @@ namespace AssetDanshari
         }
 
         /// <summary>
+        /// 数据根
+        /// </summary>
+        public AssetInfo data { get; protected set; }
+
+        /// <summary>
         /// 右下角的路径
         /// </summary>
         public string assetPaths { get; protected set; }
@@ -52,14 +69,25 @@ namespace AssetDanshari
         public List<AssetInfo> commonDirs { get; private set; }
 
         private int m_DataPathLen = 0;
+        private int m_Id = 0;
+
+        protected void ResetAutoId()
+        {
+            m_Id = 0;
+        }
+
+        protected int GetAutoId()
+        {
+            return m_Id++;
+        }
 
         /// <summary>
         /// 是否存在数据
         /// </summary>
         /// <returns></returns>
-        public virtual bool HasData()
+        public bool HasData()
         {
-            return false;
+            return data != null;
         }
 
         public virtual AssetInfo FindData(int id)
@@ -85,18 +113,12 @@ namespace AssetDanshari
 
                 var commonName = Path.GetFileNameWithoutExtension(commonPath);
                 var commonLen = commonPath.Length - commonName.Length;
-                commonDirs.Add(new AssetInfo()
-                {
-                    fileRelativePath = commonPath,
-                    displayName = commonName
-                });
+                commonDirs.Add(new AssetInfo(GetAutoId(), commonPath, commonName));
 
                 var allDirs = Directory.GetDirectories(commonPath, "*", SearchOption.AllDirectories);
                 foreach (var allDir in allDirs)
                 {
-                    var dirInfo = new AssetInfo();
-                    dirInfo.fileRelativePath = PathToStandardized(allDir);
-                    dirInfo.displayName = dirInfo.fileRelativePath.Substring(commonLen);
+                    var dirInfo = new AssetInfo(GetAutoId(), PathToStandardized(allDir), Path.GetFileName(allDir));
                     commonDirs.Add(dirInfo);
                 }
             }
@@ -128,6 +150,10 @@ namespace AssetDanshari
 
         public void PingObject(string fileRelativePath)
         {
+            if (string.IsNullOrEmpty(fileRelativePath))
+            {
+                return;
+            }
             var obj = AssetDatabase.LoadAssetAtPath<UnityEngine.Object>(fileRelativePath);
             if (obj)
             {

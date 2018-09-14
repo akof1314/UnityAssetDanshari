@@ -12,7 +12,7 @@ namespace AssetDanshari
 {
     public class AssetDuplicateTreeModel : AssetTreeModel
     {
-        public class FileMd5Info : AssetInfo
+        public class FileMd5Info
         {
             public string filePath;
             public string fileLength;
@@ -21,22 +21,13 @@ namespace AssetDanshari
             public string md5;
         }
 
-        private IEnumerable<IGrouping<string, FileMd5Info>> m_Groups;
-        private int m_DataCount;
-
-        public IEnumerable<IGrouping<string, FileMd5Info>> data
-        {
-            get { return m_Groups; }
-        }
-
-        public override bool HasData()
-        {
-            return m_DataCount != 0;
-        }
-
         public override void SetDataPaths(string refPathStr, string pathStr, string commonPathStr)
         {
+            data = null;
+            ResetAutoId();
             base.SetDataPaths(refPathStr, pathStr, commonPathStr);
+            var rooInfo = new AssetInfo(GetAutoId(), String.Empty, String.Empty);
+            var style = AssetDanshariStyle.Get();
             var fileList = new List<FileMd5Info>();
 
             foreach (var path in resPaths)
@@ -46,7 +37,7 @@ namespace AssetDanshari
                     continue;
                 }
 
-                EditorUtility.DisplayProgressBar(AssetDanshariStyle.Get().progressTitle, String.Empty, 0f);
+                EditorUtility.DisplayProgressBar(style.progressTitle, String.Empty, 0f);
                 var allFiles = Directory.GetFiles(path, "*", SearchOption.AllDirectories);
                 for (var i = 0; i < allFiles.Length;)
                 {
@@ -57,7 +48,7 @@ namespace AssetDanshari
                         continue;
                     }
 
-                    EditorUtility.DisplayProgressBar(AssetDanshariStyle.Get().progressTitle, fileInfo.Name, i * 1f / allFiles.Length);
+                    EditorUtility.DisplayProgressBar(style.progressTitle, fileInfo.Name, i * 1f / allFiles.Length);
                     try
                     {
                         using (var md5 = MD5.Create())
@@ -66,7 +57,6 @@ namespace AssetDanshari
                             {
                                 FileMd5Info info = new FileMd5Info();
                                 info.filePath = fileInfo.FullName;
-                                info.displayName = fileInfo.Name;
                                 info.fileSize = fileInfo.Length;
                                 info.fileTime = fileInfo.CreationTime.ToString("yyyy-MM-dd HH:mm:ss");
                                 info.md5 = BitConverter.ToString(md5.ComputeHash(stream)).ToLower();
@@ -78,8 +68,8 @@ namespace AssetDanshari
                     }
                     catch (Exception e)
                     {
-                        if (!EditorUtility.DisplayDialog(AssetDanshariStyle.Get().errorTitle, path + "\n" + e.Message,
-                            AssetDanshariStyle.Get().continueStr, AssetDanshariStyle.Get().cancelStr))
+                        if (!EditorUtility.DisplayDialog(style.errorTitle, path + "\n" + e.Message,
+                            style.continueStr, style.cancelStr))
                         {
                             EditorUtility.ClearProgressBar();
                             return;
@@ -88,27 +78,31 @@ namespace AssetDanshari
                 }
             }
 
-            m_Groups = fileList.GroupBy(info => info.md5).Where(g => g.Count() > 1);
-
-            m_DataCount = 0;
-            foreach (var group in m_Groups)
+            var groups = fileList.GroupBy(info => info.md5).Where(g => g.Count() > 1);
+            foreach (var group in groups)
             {
-                foreach (var info in group)
+                AssetInfo dirInfo = new AssetInfo(GetAutoId(), String.Empty, String.Format(style.duplicateGroup, group.Count()));
+                dirInfo.isExtra = true;
+                rooInfo.AddChild(dirInfo);
+
+                foreach (var member in group)
                 {
-                    info.fileRelativePath = FullPathToRelative(info.filePath);
-                    if (info.fileSize >= (1 << 20))
+                    AssetInfo info = new AssetInfo(GetAutoId(), FullPathToRelative(member.filePath), Path.GetFileName(member.filePath));
+                    info.bindObj = member;
+                    dirInfo.AddChild(info);
+
+                    if (member.fileSize >= (1 << 20))
                     {
-                        info.fileLength = string.Format("{0:F} Mb", info.fileSize / 1024f / 1024f);
+                        member.fileLength = string.Format("{0:F} Mb", member.fileSize / 1024f / 1024f);
                     }
-                    else if (info.fileSize >= (1 << 10))
+                    else if (member.fileSize >= (1 << 10))
                     {
-                        info.fileLength = string.Format("{0:F} Kb", info.fileSize / 1024f);
+                        member.fileLength = string.Format("{0:F} Kb", member.fileSize / 1024f);
                     }
                 }
-
-                m_DataCount++;
             }
 
+            data = rooInfo;
             EditorUtility.ClearProgressBar();
         }
 
@@ -117,12 +111,12 @@ namespace AssetDanshari
         /// </summary>
         /// <param name="group"></param>
         /// <param name="useInfo"></param>
-        public void SetUseThis(IGrouping<string, FileMd5Info> group, FileMd5Info useInfo)
+        public void SetUseThis(AssetInfo group, AssetInfo useInfo)
         {
             var style = AssetDanshariStyle.Get();
 
             string patternStr = String.Empty;
-            foreach (var info in group)
+            foreach (var info in group.children)
             {
                 if (info != useInfo)
                 {
@@ -179,7 +173,7 @@ namespace AssetDanshari
             EditorUtility.DisplayDialog(String.Empty, style.progressFinish, style.sureStr);
         }
 
-        public void SetRemoveAllOther(IGrouping<string, FileMd5Info> group, FileMd5Info selectInfo)
+        public void SetRemoveAllOther(AssetInfo group, AssetInfo selectInfo)
         {
             var style = AssetDanshariStyle.Get();
             if (!EditorUtility.DisplayDialog(String.Empty, style.sureStr + style.duplicateContextDelOther.text,
@@ -188,7 +182,7 @@ namespace AssetDanshari
                 return;
             }
 
-            foreach (var info in group)
+            foreach (var info in group.children)
             {
                 if (info != selectInfo && !info.deleted)
                 {
@@ -216,16 +210,18 @@ namespace AssetDanshari
             sb.AppendFormat("\"{0}\",", style.duplicateHeaderContent3.text);
             sb.AppendFormat("\"{0}\"\n", style.duplicateHeaderContent4.text);
 
-            foreach (var group in m_Groups)
+            foreach (var group in data.children)
             {
-                sb.AppendLine(String.Format(AssetDanshariStyle.Get().duplicateGroup, group.Count()));
+                sb.AppendLine(String.Format(style.duplicateGroup, group.displayName));
 
-                foreach (var info in group)
+                foreach (var info in group.children)
                 {
                     sb.AppendFormat("\"{0}\",", info.displayName);
                     sb.AppendFormat("\"{0}\",", info.fileRelativePath);
-                    sb.AppendFormat("\"{0}\",", info.fileLength);
-                    sb.AppendFormat("\"{0}\"\n", info.fileTime);
+
+                    FileMd5Info md5Info = info.bindObj as FileMd5Info;
+                    sb.AppendFormat("\"{0}\",", md5Info.fileLength);
+                    sb.AppendFormat("\"{0}\"\n", md5Info.fileTime);
                 }
             }
 
