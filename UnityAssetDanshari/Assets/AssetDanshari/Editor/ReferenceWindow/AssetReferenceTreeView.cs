@@ -23,13 +23,13 @@ namespace AssetDanshari
                 case 0:
                     if (!info.isExtra)
                     {
-                        DrawItemWithIcon(cellRect, item, ref args, info.displayName, info.fileRelativePath, info.deleted);
+                        DrawItemWithIcon(cellRect, item, ref args, info.displayName, info.fileRelativePath, info.deleted, info.added);
                     }
                     break;
                 case 1:
                     if (info.isExtra)
                     {
-                        DrawItemWithIcon(cellRect, item, ref args, info.displayName, info.fileRelativePath, info.deleted, false);
+                        DrawItemWithIcon(cellRect, item, ref args, info.displayName, info.fileRelativePath, info.deleted, info.added, false);
                     }
                     else
                     {

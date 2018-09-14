@@ -25,7 +25,6 @@ namespace AssetDanshari
             public GUIContent duplicateHeaderContent2 = new GUIContent("路径");
             public GUIContent duplicateHeaderContent3 = new GUIContent("大小");
             public GUIContent duplicateHeaderContent4 = new GUIContent("创建时间");
-            public GUIContent duplicateDelete = EditorGUIUtility.IconContent("AS Badge Delete");
             public GUIContent duplicateContextLocation = new GUIContent("定位");
             public GUIContent duplicateContextExplorer = new GUIContent("打开所在文件夹");
             public GUIContent duplicateContextUseThis = new GUIContent("仅使用此资源");
@@ -45,6 +44,9 @@ namespace AssetDanshari
             public GUIContent referenceHeaderContent = new GUIContent("名称");
             public GUIContent referenceHeaderContent2 = new GUIContent("引用的资源");
             public GUIContent referenceHeaderContent3 = new GUIContent("隶属");
+
+            public GUIContent iconDelete = EditorGUIUtility.IconContent("AS Badge Delete");
+            public GUIContent iconNew = EditorGUIUtility.IconContent("AS Badge New");
 
             public string progressTitle = "正在处理";
             public string errorTitle = "错误信息";

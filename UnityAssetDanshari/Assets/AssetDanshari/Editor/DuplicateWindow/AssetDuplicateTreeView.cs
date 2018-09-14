@@ -30,7 +30,7 @@ namespace AssetDanshari
             switch (column)
             {
                 case 0:
-                    DrawItemWithIcon(cellRect, item, ref args, info.displayName, info.fileRelativePath, info.deleted, false, true);
+                    DrawItemWithIcon(cellRect, item, ref args, info.displayName, info.fileRelativePath, info.deleted, info.added, false, true);
                     break;
                 case 1:
                     DefaultGUI.Label(cellRect, info.fileRelativePath, args.selected, args.focused);

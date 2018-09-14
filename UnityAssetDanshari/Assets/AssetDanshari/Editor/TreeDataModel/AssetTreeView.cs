@@ -99,7 +99,7 @@ namespace AssetDanshari
         }
 
         protected void DrawItemWithIcon(Rect cellRect, TreeViewItem item, ref RowGUIArgs args,
-            string displayName, string fileRelativePath, bool deleted, bool contentIndent = true, bool foldoutIndent = false)
+            string displayName, string fileRelativePath, bool deleted, bool added, bool contentIndent = true, bool foldoutIndent = false)
         {
             if (contentIndent)
             {
@@ -134,13 +134,14 @@ namespace AssetDanshari
 
             cellRect.xMin += 18f;
             DefaultGUI.Label(cellRect, displayName, args.selected, args.focused);
-            if (deleted)
+            if (deleted || added)
             {
                 position.x = cellRect.xMax - 40f;
                 position.y += 3f;
                 position.height = 9f;
                 position.width = 40f;
-                GUI.DrawTexture(position, AssetDanshariStyle.Get().duplicateDelete.image, ScaleMode.ScaleToFit);
+                GUI.DrawTexture(position, added ? AssetDanshariStyle.Get().iconNew.image:
+                    AssetDanshariStyle.Get().iconDelete.image, ScaleMode.ScaleToFit);
             }
         }
 
@@ -377,6 +378,7 @@ namespace AssetDanshari
                 {
                     item2.icon = AssetDanshariStyle.Get().folderIcon;
                 }
+                assetInfo2.added = true;
                 item.AddChild(item2);
             }
             SetupDepthsFromParentsAndChildren(rootItem);
