@@ -93,11 +93,15 @@ namespace AssetDanshari
 
                     if (member.fileSize >= (1 << 20))
                     {
-                        member.fileLength = string.Format("{0:F} Mb", member.fileSize / 1024f / 1024f);
+                        member.fileLength = string.Format("{0:F} MB", member.fileSize / 1024f / 1024f);
                     }
                     else if (member.fileSize >= (1 << 10))
                     {
-                        member.fileLength = string.Format("{0:F} Kb", member.fileSize / 1024f);
+                        member.fileLength = string.Format("{0:F} KB", member.fileSize / 1024f);
+                    }
+                    else
+                    {
+                        member.fileLength = string.Format("{0:F} B", member.fileSize);
                     }
                 }
             }

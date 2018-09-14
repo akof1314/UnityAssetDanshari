@@ -7,7 +7,7 @@ namespace AssetDanshari
 {
     public class AssetDanshariWindow : EditorWindow
     {
-        [MenuItem("Tool/Asset Danshari")]
+        [MenuItem("美术工具/资源断舍离")]
         static void ShowWindow()
         {
             GetWindow<AssetDanshariWindow>();
@@ -19,7 +19,7 @@ namespace AssetDanshari
 
         private void Awake()
         {
-            titleContent.text = "Asset Danshari";
+            titleContent.text = "资源断舍离";
         }
 
         private void OnEnable()
@@ -54,15 +54,20 @@ namespace AssetDanshari
         {
             if (m_AssetDanshariSetting == null)
             {
-                string[] guids = AssetDatabase.FindAssets("t:" + typeof(AssetDanshariSetting).Name);
-                if (guids.Length == 0)
+                m_AssetDanshariSetting = AssetDatabase.LoadAssetAtPath<AssetDanshariSetting>(
+                    "Assets/Editor/AssetDanshari/AssetDanshariSetting.asset");
+                if (m_AssetDanshariSetting == null)
                 {
-                    Debug.LogError("Missing AssetDanshariSetting File");
-                    return;
-                }
+                    string[] guids = AssetDatabase.FindAssets("t:" + typeof(AssetDanshariSetting).Name);
+                    if (guids.Length == 0)
+                    {
+                        Debug.LogError("Missing AssetDanshariSetting File");
+                        return;
+                    }
 
-                string path = AssetDatabase.GUIDToAssetPath(guids[0]);
-                m_AssetDanshariSetting = AssetDatabase.LoadAssetAtPath<AssetDanshariSetting>(path);
+                    string path = AssetDatabase.GUIDToAssetPath(guids[0]);
+                    m_AssetDanshariSetting = AssetDatabase.LoadAssetAtPath<AssetDanshariSetting>(path);
+                }
             }
 
             if (m_ReorderableList == null)

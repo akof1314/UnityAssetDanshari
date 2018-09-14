@@ -107,12 +107,14 @@ namespace AssetDanshari
                 }
 
                 var commonName = Path.GetFileNameWithoutExtension(commonPath);
+                var commonLen = commonPath.Length - commonName.Length;
                 commonDirs.Add(new AssetInfo(GetAutoId(), commonPath, commonName));
 
                 var allDirs = Directory.GetDirectories(commonPath, "*", SearchOption.AllDirectories);
                 foreach (var allDir in allDirs)
                 {
-                    var dirInfo = new AssetInfo(GetAutoId(), PathToStandardized(allDir), Path.GetFileName(allDir));
+                    var dirInfo = GenAssetInfo(PathToStandardized(allDir));
+                    dirInfo.displayName = dirInfo.fileRelativePath.Substring(commonLen);
                     commonDirs.Add(dirInfo);
                 }
             }
