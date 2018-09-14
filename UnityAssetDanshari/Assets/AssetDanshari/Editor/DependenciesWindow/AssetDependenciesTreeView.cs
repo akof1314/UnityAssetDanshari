@@ -34,7 +34,7 @@ namespace AssetDanshari
                     }
                     else
                     {
-                        if (info.hasChildren && info.children.Count > 0)
+                        if (!info.isFolder && info.hasChildren && info.children.Count > 0)
                         {
                             DefaultGUI.Label(cellRect, info.children.Count.ToString(), args.selected, args.focused);
                         }
@@ -75,84 +75,5 @@ namespace AssetDanshari
                 menu.ShowAsContext();
             }
         }
-
-        #region  数据变化
-        
-        protected override bool OnWatcherMovedAssetsEvent(string[] movedFromAssetPaths, string[] movedAssets)
-        {
-            bool ret = base.OnWatcherMovedAssetsEvent(movedFromAssetPaths, movedAssets);
-            if (!ret)
-            {
-                return false;
-            }
-
-            if (watcherItems.Count == 0)
-            {
-                return true;
-            }
-
-            // 先移除
-            foreach (var watcherItem in watcherItems)
-            {
-                if (watcherItem.parent != null)
-                {
-                    watcherItem.parent.children.Remove(watcherItem);
-                }
-
-                watcherItem.parent = null;
-
-                var assetInfo = GetItemAssetInfo(watcherItem);
-                if (assetInfo != null)
-                {
-                    if (assetInfo.parent != null)
-                    {
-                        assetInfo.parent.children.Remove(assetInfo);
-                    }
-
-                    assetInfo.parent = null;
-                }
-            }
-
-            // 排序，以防止先处理了文件
-            watcherItems.Sort((a, b) =>
-            {
-                var aa = GetItemAssetInfo(a);
-                var bb = GetItemAssetInfo(b);
-                if (aa != null && bb != null)
-                {
-                    return EditorUtility.NaturalCompare(aa.fileRelativePath, bb.fileRelativePath);
-                }
-
-                return EditorUtility.NaturalCompare(a.displayName, b.displayName);
-            });
-
-            foreach (var watcherItem in watcherItems)
-            {
-                var assetInfo = GetItemAssetInfo(watcherItem);
-                if (assetInfo == null)
-                {
-                    continue;
-                }
-                var item = FindItemByAssetPath(rootItem, Path.GetDirectoryName(assetInfo.fileRelativePath));
-                if (item == null)
-                {
-                    continue;
-                }
-                var assetInfo2 = GetItemAssetInfo(item);
-                if (assetInfo2 == null)
-                {
-                    continue;
-                }
-
-                item.AddChild(watcherItem);
-                assetInfo2.AddChild(assetInfo);
-            }
-            SetupDepthsFromParentsAndChildren(rootItem);
-            SortTreeViewNaturalCompare(rootItem);
-
-            return true;
-        }
-
-        #endregion
     }
 }

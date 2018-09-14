@@ -13,11 +13,6 @@ namespace AssetDanshari
         protected AssetTreeModel m_Model;
         private List<TreeViewItem> m_WatcherItems = new List<TreeViewItem>();
 
-        protected List<TreeViewItem> watcherItems
-        {
-            get { return m_WatcherItems; }
-        }
-
         public AssetTreeView(TreeViewState state, MultiColumnHeader multiColumnHeader, AssetTreeModel model) : base(state, multiColumnHeader)
         {
             m_Model = model;
@@ -317,8 +312,10 @@ namespace AssetDanshari
             {
                 Debug.Log(importedAsset);
             }
-            if (OnWatcherImportedAssetsEvent(importedAssets))
+            if (OnWatcherImportedAssetsEvent(importedAssets, true))
             {
+                SetExpanded(rootItem.id, false);
+                SetExpanded(rootItem.id, true);
                 Repaint();
             }
         }
@@ -343,7 +340,7 @@ namespace AssetDanshari
             {
                 Debug.Log(importedAsset);
             }
-            if (OnWatcherMovedAssetsEvent(movedFromAssetPaths, movedAssets))
+            if (OnWatcherMovedAssetsEvent(movedFromAssetPaths, movedAssets, true))
             {
                 SetExpanded(rootItem.id, false);
                 SetExpanded(rootItem.id, true);
@@ -351,9 +348,9 @@ namespace AssetDanshari
             }
         }
 
-        protected virtual bool OnWatcherImportedAssetsEvent(string[] importedAssets)
+        protected virtual bool OnWatcherImportedAssetsEvent(string[] importedAssets, bool resortItem)
         {
-            if (importedAssets.Length == 0)
+            if (importedAssets.Length == 0 || !resortItem)
             {
                 return false;
             }
@@ -372,8 +369,19 @@ namespace AssetDanshari
                     continue;
                 }
 
+                var assetInfo2 = m_Model.GenAssetInfo(importedAsset);
+                assetInfo.AddChild(assetInfo2);
+
+                var item2 = new AssetTreeViewItem<AssetTreeModel.AssetInfo>(assetInfo2.id, -1, assetInfo2.displayName, assetInfo2);
+                if (assetInfo2.isFolder)
+                {
+                    item2.icon = AssetDanshariStyle.Get().folderIcon;
+                }
+                item.AddChild(item2);
             }
-            return false;
+            SetupDepthsFromParentsAndChildren(rootItem);
+            SortTreeViewNaturalCompare(rootItem);
+            return true;
         }
 
         protected virtual bool OnWatcherDeletedAssetsEvent(string[] deletedAssets)
@@ -395,7 +403,7 @@ namespace AssetDanshari
             return false;
         }
 
-        protected virtual bool OnWatcherMovedAssetsEvent(string[] movedFromAssetPaths, string[] movedAssets)
+        protected virtual bool OnWatcherMovedAssetsEvent(string[] movedFromAssetPaths, string[] movedAssets, bool resortItem)
         {
             m_WatcherItems.Clear();
             FindItemsByAssetPaths(rootItem, movedFromAssetPaths, m_WatcherItems);
@@ -420,13 +428,72 @@ namespace AssetDanshari
                 
                 // 移除掉额外显示的项，因为不需要变动
                 m_WatcherItems.RemoveAll(IsExtraItem);
-                // 剩余的做导入处理
-                OnWatcherImportedAssetsEvent(importedAssets.ToArray());
-                return true;
             }
 
-            OnWatcherImportedAssetsEvent(importedAssets.ToArray());
-            return false;
+            if (resortItem && m_WatcherItems.Count > 0)
+            {
+                // 先移除
+                foreach (var watcherItem in m_WatcherItems)
+                {
+                    if (watcherItem.parent != null)
+                    {
+                        watcherItem.parent.children.Remove(watcherItem);
+                    }
+
+                    watcherItem.parent = null;
+
+                    var assetInfo = GetItemAssetInfo(watcherItem);
+                    if (assetInfo != null)
+                    {
+                        if (assetInfo.parent != null)
+                        {
+                            assetInfo.parent.children.Remove(assetInfo);
+                        }
+
+                        assetInfo.parent = null;
+                    }
+                }
+
+                // 排序，以防止先处理了文件
+                m_WatcherItems.Sort((a, b) =>
+                {
+                    var aa = GetItemAssetInfo(a);
+                    var bb = GetItemAssetInfo(b);
+                    if (aa != null && bb != null)
+                    {
+                        return EditorUtility.NaturalCompare(aa.fileRelativePath, bb.fileRelativePath);
+                    }
+
+                    return EditorUtility.NaturalCompare(a.displayName, b.displayName);
+                });
+
+                foreach (var watcherItem in m_WatcherItems)
+                {
+                    var assetInfo = GetItemAssetInfo(watcherItem);
+                    if (assetInfo == null)
+                    {
+                        continue;
+                    }
+                    var item = FindItemByAssetPath(rootItem, Path.GetDirectoryName(assetInfo.fileRelativePath));
+                    if (item == null)
+                    {
+                        continue;
+                    }
+                    var assetInfo2 = GetItemAssetInfo(item);
+                    if (assetInfo2 == null)
+                    {
+                        continue;
+                    }
+
+                    item.AddChild(watcherItem);
+                    assetInfo2.AddChild(assetInfo);
+                }
+                SetupDepthsFromParentsAndChildren(rootItem);
+                SortTreeViewNaturalCompare(rootItem);
+            }
+
+            bool ret = OnWatcherImportedAssetsEvent(importedAssets.ToArray(), resortItem);
+            return m_WatcherItems.Count > 0 || ret;
         }
 
         private void FindItemsByAssetPaths(TreeViewItem searchFromThisItem, string[] assetPaths, List<TreeViewItem> result)

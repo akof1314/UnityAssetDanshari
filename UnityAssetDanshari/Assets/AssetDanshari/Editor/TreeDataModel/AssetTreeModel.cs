@@ -90,11 +90,6 @@ namespace AssetDanshari
             return data != null;
         }
 
-        public virtual AssetInfo FindData(int id)
-        {
-            return null;
-        }
-
         public virtual void SetDataPaths(string refPathStr, string pathStr, string commonPathStr)
         {
             assetPaths = pathStr;
@@ -112,7 +107,6 @@ namespace AssetDanshari
                 }
 
                 var commonName = Path.GetFileNameWithoutExtension(commonPath);
-                var commonLen = commonPath.Length - commonName.Length;
                 commonDirs.Add(new AssetInfo(GetAutoId(), commonPath, commonName));
 
                 var allDirs = Directory.GetDirectories(commonPath, "*", SearchOption.AllDirectories);
@@ -122,6 +116,16 @@ namespace AssetDanshari
                     commonDirs.Add(dirInfo);
                 }
             }
+        }
+
+        public AssetInfo GenAssetInfo(string assetPath)
+        {
+            AssetInfo info = new AssetInfo(GetAutoId(), PathToStandardized(assetPath), Path.GetFileName(assetPath));
+            if (AssetDatabase.IsValidFolder(assetPath))
+            {
+                info.isFolder = true;
+            }
+            return info;
         }
 
         public bool SetMoveToCommon(AssetInfo moveInfo, string destDir)

@@ -88,5 +88,20 @@ namespace AssetDanshari
                 Repaint();
             }
         }
+
+
+        #region  数据变化
+
+        protected override bool OnWatcherImportedAssetsEvent(string[] importedAssets, bool resortItem)
+        {
+            return base.OnWatcherImportedAssetsEvent(importedAssets, false);
+        }
+
+        protected override bool OnWatcherMovedAssetsEvent(string[] movedFromAssetPaths, string[] movedAssets, bool resortItem)
+        {
+            return base.OnWatcherMovedAssetsEvent(movedFromAssetPaths, movedAssets, false);
+        }
+
+        #endregion
     }
 }
