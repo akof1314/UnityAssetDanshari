@@ -4,7 +4,6 @@ using System.IO;
 using System.Linq;
 using System.Security.Cryptography;
 using System.Text;
-using System.Text.RegularExpressions;
 using System.Threading;
 using UnityEditor;
 using UnityEngine;
@@ -123,16 +122,15 @@ namespace AssetDanshari
         {
             var style = AssetDanshariStyle.Get();
 
-            string patternStr = String.Empty;
+            List<string> patterns = new List<string>();
             foreach (var info in group.children)
             {
                 if (info != useInfo)
                 {
-                    patternStr += String.Format("({0})|", AssetDatabase.AssetPathToGUID(info.fileRelativePath));
+                    patterns.Add(AssetDatabase.AssetPathToGUID(info.fileRelativePath));
                 }
             }
 
-            patternStr = patternStr.TrimEnd('|');
             string replaceStr = AssetDatabase.AssetPathToGUID(useInfo.fileRelativePath);
             List<string> fileList = new List<string>();
 
@@ -158,7 +156,7 @@ namespace AssetDanshari
                 }
             }
 
-            FilesTextReplace(fileList, patternStr, replaceStr);
+            FilesTextReplace(fileList, patterns, replaceStr);
             EditorUtility.ClearProgressBar();
             EditorUtility.DisplayDialog(String.Empty, style.progressFinish, style.sureStr);
         }
@@ -224,16 +222,16 @@ namespace AssetDanshari
         private class JobFileTextReplace
         {
             private string m_Path;
-            private string m_Pattern;
+            private List<string> m_Patterns;
             private string m_ReplaceStr;
 
             public ManualResetEvent doneEvent;
             public string exception;
 
-            public JobFileTextReplace(string path, string pattern, string replaceStr)
+            public JobFileTextReplace(string path, List<string> patterns, string replaceStr)
             {
                 m_Path = path;
-                m_Pattern = pattern;
+                m_Patterns = patterns;
                 m_ReplaceStr = replaceStr;
                 doneEvent = new ManualResetEvent(false);
             }
@@ -243,7 +241,13 @@ namespace AssetDanshari
                 try
                 {
                     string text = File.ReadAllText(m_Path);
-                    string text2 = new Regex(m_Pattern).Replace(text, m_ReplaceStr);
+                    StringBuilder sb = new StringBuilder(text, text.Length * 2);
+                    foreach (var pattern in m_Patterns)
+                    {
+                        sb.Replace(pattern, m_ReplaceStr);
+                    }
+
+                    string text2 = sb.ToString();
                     if (!string.Equals(text, text2))
                     {
                         File.WriteAllText(m_Path, text2);
@@ -258,7 +262,7 @@ namespace AssetDanshari
             }
         }
 
-        private void FilesTextReplace(List<string> fileList, string pattern, string replaceStr)
+        private void FilesTextReplace(List<string> fileList, List<string> patterns, string replaceStr)
         {
             List<JobFileTextReplace> jobList = new List<JobFileTextReplace>();
             List<ManualResetEvent> eventList = new List<ManualResetEvent>();
@@ -271,7 +275,7 @@ namespace AssetDanshari
 
             foreach (var file in fileList)
             {
-                JobFileTextReplace job = new JobFileTextReplace(file, pattern, replaceStr);
+                JobFileTextReplace job = new JobFileTextReplace(file, patterns, replaceStr);
                 jobList.Add(job);
                 eventList.Add(job.doneEvent);
                 ThreadPool.QueueUserWorkItem(job.ThreadPoolCallback);
