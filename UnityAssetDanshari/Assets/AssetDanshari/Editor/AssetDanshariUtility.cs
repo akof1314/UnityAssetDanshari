@@ -53,5 +53,12 @@ namespace AssetDanshari
                 throw;
             }
         }
+
+        public static void DisplayThreadProgressBar(int totalFiles, int filesFinished)
+        {
+            string msg = String.Format(@"{0} ({1}/{2})", AssetDanshariStyle.Get().progressTitle,
+                (filesFinished + 1).ToString(), totalFiles.ToString());
+            EditorUtility.DisplayProgressBar(AssetDanshariStyle.Get().progressTitle, msg, (filesFinished + 1) * 1f / totalFiles);
+        }
     }
 }

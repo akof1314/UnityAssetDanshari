@@ -5,6 +5,7 @@ using System.Linq;
 using System.Security.Cryptography;
 using System.Text;
 using System.Text.RegularExpressions;
+using System.Threading;
 using UnityEditor;
 using UnityEngine;
 
@@ -132,8 +133,8 @@ namespace AssetDanshari
             }
 
             patternStr = patternStr.TrimEnd('|');
-            Regex pattern = new Regex(patternStr);
             string replaceStr = AssetDatabase.AssetPathToGUID(useInfo.fileRelativePath);
+            List<string> fileList = new List<string>();
 
             foreach (var refPath in refPaths)
             {
@@ -145,37 +146,19 @@ namespace AssetDanshari
                 EditorUtility.DisplayProgressBar(style.progressTitle, String.Empty, 0f);
                 var allFiles = Directory.GetFiles(refPath, "*", SearchOption.AllDirectories);
 
-                for (var i = 0; i < allFiles.Length;)
+                for (var i = 0; i < allFiles.Length; i++)
                 {
                     var file = allFiles[i];
                     if (!AssetDanshariUtility.IsPlainTextExt(file))
                     {
-                        i++;
                         continue;
                     }
 
-                    EditorUtility.DisplayProgressBar(style.progressTitle, file, i * 1f / allFiles.Length);
-                    try
-                    {
-                        string text = File.ReadAllText(file);
-                        string text2 = pattern.Replace(text, replaceStr);
-                        if (!string.Equals(text, text2))
-                        {
-                            File.WriteAllText(file, text2);
-                        }
-                        i++;
-                    }
-                    catch (Exception e)
-                    {
-                        if (!EditorUtility.DisplayDialog(style.errorTitle, file + "\n" + e.Message,
-                            style.continueStr, style.cancelStr))
-                        {
-                            EditorUtility.ClearProgressBar();
-                            return;
-                        }
-                    }
+                    fileList.Add(file);
                 }
             }
+
+            FilesTextReplace(fileList, patternStr, replaceStr);
             EditorUtility.ClearProgressBar();
             EditorUtility.DisplayDialog(String.Empty, style.progressFinish, style.sureStr);
         }
@@ -235,5 +218,98 @@ namespace AssetDanshari
             AssetDanshariUtility.SaveFileText(path, sb.ToString());
             GUIUtility.ExitGUI();
         }
+
+        #region  多线程执行
+
+        private class JobFileTextReplace
+        {
+            private string m_Path;
+            private string m_Pattern;
+            private string m_ReplaceStr;
+
+            public ManualResetEvent doneEvent;
+            public string exception;
+
+            public JobFileTextReplace(string path, string pattern, string replaceStr)
+            {
+                m_Path = path;
+                m_Pattern = pattern;
+                m_ReplaceStr = replaceStr;
+                doneEvent = new ManualResetEvent(false);
+            }
+
+            public void ThreadPoolCallback(System.Object threadContext)
+            {
+                try
+                {
+                    string text = File.ReadAllText(m_Path);
+                    string text2 = new Regex(m_Pattern).Replace(text, m_ReplaceStr);
+                    if (!string.Equals(text, text2))
+                    {
+                        File.WriteAllText(m_Path, text2);
+                    }
+                }
+                catch (Exception ex)
+                {
+                    exception = m_Path + "\n" + ex.Message;
+                }
+
+                doneEvent.Set();
+            }
+        }
+
+        private void FilesTextReplace(List<string> fileList, string pattern, string replaceStr)
+        {
+            List<JobFileTextReplace> jobList = new List<JobFileTextReplace>();
+            List<ManualResetEvent> eventList = new List<ManualResetEvent>();
+
+            int numFiles = fileList.Count;
+            int numFinished = 0;
+            AssetDanshariUtility.DisplayThreadProgressBar(numFiles, numFinished);
+
+            int timeout = 600000;  // 10 分钟超时
+
+            foreach (var file in fileList)
+            {
+                JobFileTextReplace job = new JobFileTextReplace(file, pattern, replaceStr);
+                jobList.Add(job);
+                eventList.Add(job.doneEvent);
+                ThreadPool.QueueUserWorkItem(job.ThreadPoolCallback);
+
+                if (eventList.Count >= Environment.ProcessorCount)
+                {
+                    WaitForDoFile(eventList, timeout);
+                    AssetDanshariUtility.DisplayThreadProgressBar(numFiles, numFinished);
+                    numFinished++;
+                }
+            }
+
+            while (eventList.Count > 0)
+            {
+                WaitForDoFile(eventList, timeout);
+                AssetDanshariUtility.DisplayThreadProgressBar(numFiles, numFinished);
+                numFinished++;
+            }
+
+            foreach (var job in jobList)
+            {
+                if (!string.IsNullOrEmpty(job.exception))
+                {
+                    Debug.LogError(job.exception);
+                }
+            }
+        }
+
+        private void WaitForDoFile(List<ManualResetEvent> events, int timeout)
+        {
+            int finished = WaitHandle.WaitAny(events.ToArray(), timeout);
+            if (finished == WaitHandle.WaitTimeout)
+            {
+                // 超时
+            }
+            events.RemoveAt(finished);
+        }
+
+        #endregion
     }
 }
