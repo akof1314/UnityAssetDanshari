@@ -70,7 +70,10 @@ namespace AssetDanshari
 
             CheckDirMatch(rooInfo, rooResInfo);
 
-            data = rooInfo;
+            if (rooInfo.hasChildren)
+            {
+                data = rooInfo;
+            }
             EditorUtility.ClearProgressBar();
         }
 

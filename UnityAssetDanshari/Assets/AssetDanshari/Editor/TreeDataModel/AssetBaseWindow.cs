@@ -1,4 +1,5 @@
-﻿using UnityEngine;
+﻿using System;
+using UnityEngine;
 using UnityEditor;
 using UnityEditor.IMGUI.Controls;
 
@@ -16,16 +17,12 @@ namespace AssetDanshari
         private SearchField m_SearchField;
         protected AssetTreeModel m_AssetTreeModel;
         protected AssetTreeView m_AssetTreeView;
+        private Action m_CallbackAfterFrame;
 
         [SerializeField]
         protected TreeViewState m_TreeViewState;
         [SerializeField]
         private MultiColumnHeaderState m_MultiColumnHeaderState;
-
-        private void OnEnable()
-        {
-            Init();
-        }
 
         private void OnDisable()
         {
@@ -34,6 +31,12 @@ namespace AssetDanshari
 
         private void OnGUI()
         {
+            Init();
+            if (m_CallbackAfterFrame != null)
+            {
+                m_CallbackAfterFrame();
+                m_CallbackAfterFrame = null;
+            }
             DrawGUI(GUIContent.none, GUIContent.none, false);
         }
 
@@ -62,6 +65,8 @@ namespace AssetDanshari
             }
 
             m_SearchField = new SearchField();
+
+            // 需要在 OnGUI 里面进行构造，否则treeview的GUIView会取到上一个窗口，导致焦点问题
             InitTree(multiColumnHeader);
         }
 
@@ -162,12 +167,16 @@ namespace AssetDanshari
         private void SetCheckPaths(string refPaths, string paths, string commonPaths)
         {
             RemoveNotification();
-            m_AssetTreeModel.SetDataPaths(refPaths, paths, commonPaths);
-            if (m_AssetTreeModel.HasData())
+            m_CallbackAfterFrame = () =>
             {
-                m_AssetTreeView.Reload();
-                m_AssetTreeView.ExpandAllExceptLast();
-            }
+                m_AssetTreeModel.SetDataPaths(refPaths, paths, commonPaths);
+                if (m_AssetTreeModel.HasData())
+                {
+                    m_AssetTreeView.Reload();
+                    m_AssetTreeView.ExpandAllExceptLast();
+                }
+            };
+            Repaint();
         }
     }
 }

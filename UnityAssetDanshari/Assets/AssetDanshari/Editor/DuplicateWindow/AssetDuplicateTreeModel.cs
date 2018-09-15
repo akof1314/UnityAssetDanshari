@@ -106,7 +106,10 @@ namespace AssetDanshari
                 }
             }
 
-            data = rooInfo;
+            if (rooInfo.hasChildren)
+            {
+                data = rooInfo;
+            }
             EditorUtility.ClearProgressBar();
         }
 
