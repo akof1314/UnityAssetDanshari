@@ -178,7 +178,7 @@ namespace AssetDanshari
 
             var style = AssetDanshariStyle.Get();
             var sb = new StringBuilder();
-            sb.AppendFormat("\"{0}\",", style.dependenciesHeaderContent.text);
+            sb.AppendFormat("\"{0}\",", style.nameHeaderContent.text);
             sb.AppendFormat("\"{0}\"\n", style.dependenciesHeaderContent2.text);
 
             foreach (var info in data.children)

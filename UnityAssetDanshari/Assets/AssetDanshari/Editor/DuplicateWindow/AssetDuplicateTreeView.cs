@@ -58,12 +58,12 @@ namespace AssetDanshari
             }
 
             GenericMenu menu = new GenericMenu();
-            menu.AddItem(AssetDanshariStyle.Get().duplicateContextLocation, false, OnContextSetActiveItem, id);
-            menu.AddItem(AssetDanshariStyle.Get().duplicateContextExplorer, false, OnContextExplorerActiveItem, item);
+            menu.AddItem(AssetDanshariStyle.Get().locationContext, false, OnContextSetActiveItem, id);
+            menu.AddItem(AssetDanshariStyle.Get().explorerContext, false, OnContextExplorerActiveItem, item);
             menu.AddSeparator(String.Empty);
-            menu.AddItem(AssetDanshariStyle.Get().duplicateContextUseThis, false, OnContextUseThisItem, item);
             AddContextMoveComm(menu);
-            menu.AddItem(AssetDanshariStyle.Get().duplicateContextDelOther, false, OnContextRemoveAllOther, item);
+            menu.AddSeparator(String.Empty);
+            menu.AddItem(AssetDanshariStyle.Get().duplicateContextOnlyUseThis, false, OnContextUseThisItem, item);
             menu.ShowAsContext();
         }
 
@@ -77,18 +77,6 @@ namespace AssetDanshari
                 Repaint();
             }
         }
-
-        private void OnContextRemoveAllOther(object userdata)
-        {
-            var item = userdata as AssetTreeViewItem<AssetTreeModel.AssetInfo>;
-            if (item != null)
-            {
-                var itemParent = item.parent as AssetTreeViewItem<AssetTreeModel.AssetInfo>;
-                model.SetRemoveAllOther(itemParent.data, item.data);
-                Repaint();
-            }
-        }
-
 
         #region  数据变化
 

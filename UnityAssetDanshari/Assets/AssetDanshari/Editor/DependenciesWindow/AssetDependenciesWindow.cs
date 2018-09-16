@@ -28,7 +28,7 @@ namespace AssetDanshari
             {
                 new MultiColumnHeaderState.Column
                 {
-                    headerContent = AssetDanshariStyle.Get().dependenciesHeaderContent,
+                    headerContent = AssetDanshariStyle.Get().nameHeaderContent,
                     headerTextAlignment = TextAlignment.Left,
                     canSort = false,
                     sortingArrowAlignment = TextAlignment.Right,

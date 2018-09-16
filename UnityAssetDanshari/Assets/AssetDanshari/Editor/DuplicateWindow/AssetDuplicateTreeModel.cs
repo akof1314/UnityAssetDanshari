@@ -121,6 +121,11 @@ namespace AssetDanshari
         public void SetUseThis(AssetInfo group, AssetInfo useInfo)
         {
             var style = AssetDanshariStyle.Get();
+            if (!EditorUtility.DisplayDialog(String.Empty, style.sureStr + style.duplicateContextOnlyUseThis.text,
+                style.sureStr, style.cancelStr))
+            {
+                return;
+            }
 
             List<string> patterns = new List<string>();
             foreach (var info in group.children)
@@ -157,19 +162,13 @@ namespace AssetDanshari
             }
 
             FilesTextReplace(fileList, patterns, replaceStr);
+            SetRemoveAllOther(group, useInfo);
             EditorUtility.ClearProgressBar();
             EditorUtility.DisplayDialog(String.Empty, style.progressFinish, style.sureStr);
         }
 
-        public void SetRemoveAllOther(AssetInfo group, AssetInfo selectInfo)
+        private void SetRemoveAllOther(AssetInfo group, AssetInfo selectInfo)
         {
-            var style = AssetDanshariStyle.Get();
-            if (!EditorUtility.DisplayDialog(String.Empty, style.sureStr + style.duplicateContextDelOther.text,
-                style.sureStr, style.cancelStr))
-            {
-                return;
-            }
-
             foreach (var info in group.children)
             {
                 if (info != selectInfo && !info.deleted)
@@ -180,7 +179,6 @@ namespace AssetDanshari
                     }
                 }
             }
-            EditorUtility.DisplayDialog(String.Empty, style.progressFinish, style.sureStr);
         }
 
         public override void ExportCsv()

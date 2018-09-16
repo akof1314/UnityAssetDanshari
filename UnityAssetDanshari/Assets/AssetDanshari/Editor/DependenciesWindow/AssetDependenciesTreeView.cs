@@ -59,8 +59,8 @@ namespace AssetDanshari
             GenericMenu menu = new GenericMenu();
             if (!IsSelectionMulti())
             {
-                menu.AddItem(AssetDanshariStyle.Get().duplicateContextLocation, false, OnContextSetActiveItem, id);
-                menu.AddItem(AssetDanshariStyle.Get().duplicateContextExplorer, false, OnContextExplorerActiveItem, item);
+                menu.AddItem(AssetDanshariStyle.Get().locationContext, false, OnContextSetActiveItem, id);
+                menu.AddItem(AssetDanshariStyle.Get().explorerContext, false, OnContextExplorerActiveItem, item);
                 menu.AddSeparator(String.Empty);
             }
 

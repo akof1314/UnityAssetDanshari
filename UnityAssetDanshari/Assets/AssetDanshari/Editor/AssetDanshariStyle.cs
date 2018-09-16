@@ -25,23 +25,18 @@ namespace AssetDanshari
             public GUIContent duplicateHeaderContent2 = new GUIContent("路径");
             public GUIContent duplicateHeaderContent3 = new GUIContent("大小");
             public GUIContent duplicateHeaderContent4 = new GUIContent("创建时间");
-            public GUIContent duplicateContextLocation = new GUIContent("定位");
-            public GUIContent duplicateContextExplorer = new GUIContent("打开所在文件夹");
-            public GUIContent duplicateContextUseThis = new GUIContent("仅使用此资源");
-            public GUIContent duplicateContextDelOther = new GUIContent("删除其余资源");
+            public GUIContent duplicateContextOnlyUseThis = new GUIContent("仅使用此资源，其余删除");
             public string duplicateContextMoveComm = "移入公共目录/";
             public string duplicateGroup = "文件数：{0}";
 
             public GUIContent dependenciesTitle = new GUIContent("资源被引用查找");
             public GUIContent dependenciesWaiting = new GUIContent("等待进行资源被引用查找");
             public GUIContent dependenciesNothing = new GUIContent("资源文件夹没有任何数据");
-            public GUIContent dependenciesHeaderContent = new GUIContent("名称");
             public GUIContent dependenciesHeaderContent2 = new GUIContent("被引用的路径");
 
             public GUIContent referenceTitle = new GUIContent("引用查找");
             public GUIContent referenceWaiting = new GUIContent("等待进行引用查找");
             public GUIContent referenceNothing = new GUIContent("文件夹没有任何数据");
-            public GUIContent referenceHeaderContent = new GUIContent("名称");
             public GUIContent referenceHeaderContent2 = new GUIContent("引用的资源");
             public GUIContent referenceHeaderContent3 = new GUIContent("隶属");
 
@@ -60,6 +55,9 @@ namespace AssetDanshari
             public GUIContent collapseAll = new GUIContent("折叠");
             public GUIContent collapseAll2 = new GUIContent("全部折叠");
             public GUIContent collapseAll3 = new GUIContent("仅折叠最后一层");
+            public GUIContent locationContext = new GUIContent("定位");
+            public GUIContent explorerContext = new GUIContent("打开所在文件夹");
+            public GUIContent nameHeaderContent = new GUIContent("名称");
             public Texture2D folderIcon = EditorGUIUtility.FindTexture("Folder Icon");
 
             public GUIStyle labelStyle;
