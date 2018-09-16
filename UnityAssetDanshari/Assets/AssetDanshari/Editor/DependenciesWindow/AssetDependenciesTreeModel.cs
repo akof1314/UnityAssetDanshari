@@ -1,7 +1,5 @@
 ﻿using System;
-using System.IO;
 using System.Text;
-using System.Text.RegularExpressions;
 using UnityEditor;
 using UnityEngine;
 
@@ -11,120 +9,39 @@ namespace AssetDanshari
     {
         public override void SetDataPaths(string refPathStr, string pathStr, string commonPathStr)
         {
-            data = null;
-            ResetAutoId();
             base.SetDataPaths(refPathStr, pathStr, commonPathStr);
-            var rooInfo = new AssetInfo(GetAutoId(), String.Empty, String.Empty);
-            rooInfo.isFolder = true;
-            var style = AssetDanshariStyle.Get();
 
-            for (var i = 0; i < resPaths.Length; i++)
+            var resFileList = GetResFileList();
+            var guidList = GetGuidFromFileList(resFileList);
+            var fileList = GetRefFileList();
+            var searchRetList = GetSearchResultList(fileList.Count, guidList.Count);
+
+            ThreadDoFilesTextSearchReplace(fileList, guidList, String.Empty, searchRetList);
+            var rootInfo = DirToAssetInfoTree(resPaths);
+            var resInfos = FileListToAssetInfos(resFileList);
+
+            // 根据搜索结果来挂载额外信息
+            for (int i = 0; i < fileList.Count; i++)
             {
-                var path = resPaths[i];
-                if (!Directory.Exists(path))
+                for (int j = 0; j < guidList.Count; j++)
                 {
-                    continue;
-                }
-
-                EditorUtility.DisplayProgressBar(style.progressTitle, path, i * 1f / resPaths.Length);
-                AssetInfo info = GenAssetInfo(path);
-                rooInfo.AddChild(info);
-                LoadDirData(path, info);
-            }
-
-            foreach (var refPath in refPaths)
-            {
-                if (!Directory.Exists(refPath))
-                {
-                    continue;
-                }
-
-                EditorUtility.DisplayProgressBar(style.progressTitle, String.Empty, 0f);
-                var allFiles = Directory.GetFiles(refPath, "*", SearchOption.AllDirectories);
-
-                for (var i = 0; i < allFiles.Length;)
-                {
-                    var file = PathToStandardized(allFiles[i]);
-                    if (!AssetDanshariUtility.IsPlainTextExt(file))
+                    if (searchRetList[i][j])
                     {
-                        i++;
-                        continue;
-                    }
-
-                    EditorUtility.DisplayProgressBar(style.progressTitle, file, i * 1f / allFiles.Length);
-                    try
-                    {
-                        string text = File.ReadAllText(file);
-                        CheckFileMatch(rooInfo, file, text);
-                        i++;
-                    }
-                    catch (Exception e)
-                    {
-                        if (!EditorUtility.DisplayDialog(style.errorTitle, file + "\n" + e.Message,
-                            style.continueStr, style.cancelStr))
-                        {
-                            EditorUtility.ClearProgressBar();
-                            return;
-                        }
+                        AssetInfo info = GenAssetInfo(fileList[i]);
+                        info.isExtra = true;
+                        resInfos[j].AddChild(info);
                     }
                 }
             }
+            MergeAssetInfo(rootInfo, resInfos);
 
-            if (rooInfo.hasChildren)
+            if (rootInfo.hasChildren)
             {
-                data = rooInfo;
+                data = rootInfo;
             }
             EditorUtility.ClearProgressBar();
         }
-
-        private void LoadDirData(string path, AssetInfo dirInfo)
-        {
-            var allDirs = Directory.GetDirectories(path, "*", SearchOption.TopDirectoryOnly);
-            foreach (var allDir in allDirs)
-            {
-                AssetInfo info = GenAssetInfo(allDir);
-                info.isFolder = true;
-                dirInfo.AddChild(info);
-
-                LoadDirData(info.fileRelativePath, info);
-            }
-
-            var allFiles = Directory.GetFiles(path, "*", SearchOption.TopDirectoryOnly);
-            for (var i = 0; i < allFiles.Length; i++)
-            {
-                FileInfo fileInfo = new FileInfo(allFiles[i]);
-                if (fileInfo.Extension == ".meta")
-                {
-                    continue;
-                }
-
-                AssetInfo info = GenAssetInfo(FullPathToRelative(fileInfo.FullName));
-                info.bindObj = new Regex(AssetDatabase.AssetPathToGUID(info.fileRelativePath));
-                dirInfo.AddChild(info);
-            }
-        }
-
-        private void CheckFileMatch(AssetInfo dirInfo, string filePath, string fileText)
-        {
-            if (dirInfo.isFolder && !dirInfo.isExtra && dirInfo.hasChildren)
-            {
-                foreach (var info in dirInfo.children)
-                {
-                    CheckFileMatch(info, filePath, fileText);
-                }
-            }
-            else
-            {
-                var regex = dirInfo.bindObj as Regex;
-                if (regex != null && regex.IsMatch(fileText))
-                {
-                    AssetInfo info = GenAssetInfo(filePath);
-                    info.isExtra = true;
-                    dirInfo.AddChild(info);
-                }
-            }
-        }
-
+        
         public override void ExportCsv()
         {
             string path = AssetDanshariUtility.GetSaveFilePath(typeof(AssetDependenciesWindow).Name);

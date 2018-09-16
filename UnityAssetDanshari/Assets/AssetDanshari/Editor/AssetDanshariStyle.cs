@@ -49,6 +49,7 @@ namespace AssetDanshari
             public string cancelStr = "取消";
             public string sureStr = "确定";
             public string progressFinish = "处理结束";
+            public string deleteFile = "正在删除文件...";
             public GUIContent expandAll = new GUIContent("展开");
             public GUIContent expandAll2 = new GUIContent("全部展开");
             public GUIContent expandAll3 = new GUIContent("全部展开除最后一层");

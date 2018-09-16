@@ -28,6 +28,12 @@ namespace AssetDanshari
                    ext.EndsWith(".controller") || ext.EndsWith(".anim");
         }
 
+        public static bool IsMetaExt(string ext)
+        {
+            ext = ext.ToLower();
+            return ext.EndsWith(".meta");
+        }
+
         public static string GetSaveFilePath(string key)
         {
             string path = EditorPrefs.GetString("RecentSaveFilePath" + key, Application.dataPath + key + ".csv");

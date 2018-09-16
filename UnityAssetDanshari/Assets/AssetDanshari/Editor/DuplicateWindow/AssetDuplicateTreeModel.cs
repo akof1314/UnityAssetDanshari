@@ -4,7 +4,6 @@ using System.IO;
 using System.Linq;
 using System.Security.Cryptography;
 using System.Text;
-using System.Threading;
 using UnityEditor;
 using UnityEngine;
 
@@ -23,67 +22,52 @@ namespace AssetDanshari
 
         public override void SetDataPaths(string refPathStr, string pathStr, string commonPathStr)
         {
-            data = null;
-            ResetAutoId();
             base.SetDataPaths(refPathStr, pathStr, commonPathStr);
-            var rooInfo = new AssetInfo(GetAutoId(), String.Empty, String.Empty);
             var style = AssetDanshariStyle.Get();
+
             var fileList = new List<FileMd5Info>();
+            var resFileList = GetResFileList();
 
-            foreach (var path in resPaths)
+            for (int i = 0; i < resFileList.Count;)
             {
-                if (!Directory.Exists(path))
+                string file = resFileList[i];
+                EditorUtility.DisplayProgressBar(style.progressTitle, file, i * 1f / resFileList.Count);
+                try
                 {
-                    continue;
+                    using (var md5 = MD5.Create())
+                    {
+                        FileInfo fileInfo = new FileInfo(file);
+                        using (var stream = File.OpenRead(fileInfo.FullName))
+                        {
+                            FileMd5Info info = new FileMd5Info();
+                            info.filePath = fileInfo.FullName;
+                            info.fileSize = fileInfo.Length;
+                            info.fileTime = fileInfo.CreationTime.ToString("yyyy-MM-dd HH:mm:ss");
+                            info.md5 = BitConverter.ToString(md5.ComputeHash(stream)).ToLower();
+                            fileList.Add(info);
+                        }
+                    }
+
+                    i++;
                 }
-
-                EditorUtility.DisplayProgressBar(style.progressTitle, String.Empty, 0f);
-                var allFiles = Directory.GetFiles(path, "*", SearchOption.AllDirectories);
-                for (var i = 0; i < allFiles.Length;)
+                catch (Exception e)
                 {
-                    FileInfo fileInfo = new FileInfo(allFiles[i]);
-                    if (fileInfo.Extension == ".meta")
+                    if (!EditorUtility.DisplayDialog(style.errorTitle, file + "\n" + e.Message,
+                        style.continueStr, style.cancelStr))
                     {
-                        i++;
-                        continue;
-                    }
-
-                    EditorUtility.DisplayProgressBar(style.progressTitle, fileInfo.Name, i * 1f / allFiles.Length);
-                    try
-                    {
-                        using (var md5 = MD5.Create())
-                        {
-                            using (var stream = File.OpenRead(fileInfo.FullName))
-                            {
-                                FileMd5Info info = new FileMd5Info();
-                                info.filePath = fileInfo.FullName;
-                                info.fileSize = fileInfo.Length;
-                                info.fileTime = fileInfo.CreationTime.ToString("yyyy-MM-dd HH:mm:ss");
-                                info.md5 = BitConverter.ToString(md5.ComputeHash(stream)).ToLower();
-                                fileList.Add(info);
-                            }
-                        }
-
-                        i++;
-                    }
-                    catch (Exception e)
-                    {
-                        if (!EditorUtility.DisplayDialog(style.errorTitle, path + "\n" + e.Message,
-                            style.continueStr, style.cancelStr))
-                        {
-                            EditorUtility.ClearProgressBar();
-                            return;
-                        }
+                        EditorUtility.ClearProgressBar();
+                        return;
                     }
                 }
             }
 
+            var rootInfo = new AssetInfo(GetAutoId(), String.Empty, String.Empty);
             var groups = fileList.GroupBy(info => info.md5).Where(g => g.Count() > 1);
             foreach (var group in groups)
             {
                 AssetInfo dirInfo = new AssetInfo(GetAutoId(), String.Empty, String.Format(style.duplicateGroup, group.Count()));
                 dirInfo.isExtra = true;
-                rooInfo.AddChild(dirInfo);
+                rootInfo.AddChild(dirInfo);
 
                 foreach (var member in group)
                 {
@@ -106,9 +90,9 @@ namespace AssetDanshari
                 }
             }
 
-            if (rooInfo.hasChildren)
+            if (rootInfo.hasChildren)
             {
-                data = rooInfo;
+                data = rootInfo;
             }
             EditorUtility.ClearProgressBar();
         }
@@ -137,31 +121,10 @@ namespace AssetDanshari
             }
 
             string replaceStr = AssetDatabase.AssetPathToGUID(useInfo.fileRelativePath);
-            List<string> fileList = new List<string>();
+            List<string> fileList = GetRefFileList();
 
-            foreach (var refPath in refPaths)
-            {
-                if (!Directory.Exists(refPath))
-                {
-                    continue;
-                }
-
-                EditorUtility.DisplayProgressBar(style.progressTitle, String.Empty, 0f);
-                var allFiles = Directory.GetFiles(refPath, "*", SearchOption.AllDirectories);
-
-                for (var i = 0; i < allFiles.Length; i++)
-                {
-                    var file = allFiles[i];
-                    if (!AssetDanshariUtility.IsPlainTextExt(file))
-                    {
-                        continue;
-                    }
-
-                    fileList.Add(file);
-                }
-            }
-
-            FilesTextReplace(fileList, patterns, replaceStr);
+            ThreadDoFilesTextSearchReplace(fileList, patterns, replaceStr, GetSearchResultList(fileList.Count, 0));
+            EditorUtility.DisplayProgressBar(style.progressTitle, style.deleteFile, 0.98f);
             SetRemoveAllOther(group, useInfo);
             EditorUtility.ClearProgressBar();
             EditorUtility.DisplayDialog(String.Empty, style.progressFinish, style.sureStr);
@@ -214,104 +177,5 @@ namespace AssetDanshari
             AssetDanshariUtility.SaveFileText(path, sb.ToString());
             GUIUtility.ExitGUI();
         }
-
-        #region  多线程执行
-
-        private class JobFileTextReplace
-        {
-            private string m_Path;
-            private List<string> m_Patterns;
-            private string m_ReplaceStr;
-
-            public ManualResetEvent doneEvent;
-            public string exception;
-
-            public JobFileTextReplace(string path, List<string> patterns, string replaceStr)
-            {
-                m_Path = path;
-                m_Patterns = patterns;
-                m_ReplaceStr = replaceStr;
-                doneEvent = new ManualResetEvent(false);
-            }
-
-            public void ThreadPoolCallback(System.Object threadContext)
-            {
-                try
-                {
-                    string text = File.ReadAllText(m_Path);
-                    StringBuilder sb = new StringBuilder(text, text.Length * 2);
-                    foreach (var pattern in m_Patterns)
-                    {
-                        sb.Replace(pattern, m_ReplaceStr);
-                    }
-
-                    string text2 = sb.ToString();
-                    if (!string.Equals(text, text2))
-                    {
-                        File.WriteAllText(m_Path, text2);
-                    }
-                }
-                catch (Exception ex)
-                {
-                    exception = m_Path + "\n" + ex.Message;
-                }
-
-                doneEvent.Set();
-            }
-        }
-
-        private void FilesTextReplace(List<string> fileList, List<string> patterns, string replaceStr)
-        {
-            List<JobFileTextReplace> jobList = new List<JobFileTextReplace>();
-            List<ManualResetEvent> eventList = new List<ManualResetEvent>();
-
-            int numFiles = fileList.Count;
-            int numFinished = 0;
-            AssetDanshariUtility.DisplayThreadProgressBar(numFiles, numFinished);
-
-            int timeout = 600000;  // 10 分钟超时
-
-            foreach (var file in fileList)
-            {
-                JobFileTextReplace job = new JobFileTextReplace(file, patterns, replaceStr);
-                jobList.Add(job);
-                eventList.Add(job.doneEvent);
-                ThreadPool.QueueUserWorkItem(job.ThreadPoolCallback);
-
-                if (eventList.Count >= Environment.ProcessorCount)
-                {
-                    WaitForDoFile(eventList, timeout);
-                    AssetDanshariUtility.DisplayThreadProgressBar(numFiles, numFinished);
-                    numFinished++;
-                }
-            }
-
-            while (eventList.Count > 0)
-            {
-                WaitForDoFile(eventList, timeout);
-                AssetDanshariUtility.DisplayThreadProgressBar(numFiles, numFinished);
-                numFinished++;
-            }
-
-            foreach (var job in jobList)
-            {
-                if (!string.IsNullOrEmpty(job.exception))
-                {
-                    Debug.LogError(job.exception);
-                }
-            }
-        }
-
-        private void WaitForDoFile(List<ManualResetEvent> events, int timeout)
-        {
-            int finished = WaitHandle.WaitAny(events.ToArray(), timeout);
-            if (finished == WaitHandle.WaitTimeout)
-            {
-                // 超时
-            }
-            events.RemoveAt(finished);
-        }
-
-        #endregion
     }
 }
