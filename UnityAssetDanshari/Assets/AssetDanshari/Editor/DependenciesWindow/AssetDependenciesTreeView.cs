@@ -61,18 +61,51 @@ namespace AssetDanshari
             {
                 menu.AddItem(AssetDanshariStyle.Get().locationContext, false, OnContextSetActiveItem, id);
                 menu.AddItem(AssetDanshariStyle.Get().explorerContext, false, OnContextExplorerActiveItem, item);
-                menu.AddSeparator(String.Empty);
             }
 
             if (!IsSelectionContainsReverseItem())
             {
+                menu.AddSeparator(String.Empty);
                 AddContextMoveComm(menu);
+                menu.AddSeparator(String.Empty);
+                menu.AddItem(AssetDanshariStyle.Get().dependenciesDelete, false, OnContextDeleteThisItem);
             }
 
             if (menu.GetItemCount() > 0)
             {
                 menu.ShowAsContext();
             }
+        }
+
+        private void OnContextDeleteThisItem()
+        {
+            if (!HasSelection())
+            {
+                return;
+            }
+
+            var style = AssetDanshariStyle.Get();
+            if (!EditorUtility.DisplayDialog(String.Empty, style.sureStr + style.dependenciesDelete.text,
+                style.sureStr, style.cancelStr))
+            {
+                return;
+            }
+
+            var selects = GetSelection();
+            foreach (var select in selects)
+            {
+                var assetInfo = GetItemAssetInfo(FindItem(select, rootItem));
+                if (assetInfo == null || assetInfo.deleted)
+                {
+                    continue;
+                }
+
+                if (AssetDatabase.DeleteAsset(assetInfo.fileRelativePath))
+                {
+                    assetInfo.deleted = true;
+                }
+            }
+            Repaint();
         }
     }
 }

@@ -10,6 +10,7 @@ namespace AssetDanshari
             public GUIContent help = new GUIContent("帮助");
             public GUIContent about = new GUIContent("关于");
             public GUIContent exportCsv = new GUIContent("导出 CSV");
+            public GUIContent forceText = new GUIContent("Asset Serialization must be ForceText");
             public GUIContent assetReferenceTitle = new GUIContent("检查列表");
             public GUIContent assetReferenceAsset = new GUIContent("资源目录", "存放资源的文件夹路径");
             public GUIContent assetReferenceAssetCommon = new GUIContent("公共资源目录", "整理资源时所放置的公共文件夹路径");
@@ -33,6 +34,7 @@ namespace AssetDanshari
             public GUIContent dependenciesWaiting = new GUIContent("等待进行资源被引用查找");
             public GUIContent dependenciesNothing = new GUIContent("资源文件夹没有任何数据");
             public GUIContent dependenciesHeaderContent2 = new GUIContent("被引用的路径");
+            public GUIContent dependenciesDelete = new GUIContent("删除选中资源");
 
             public GUIContent referenceTitle = new GUIContent("引用查找");
             public GUIContent referenceWaiting = new GUIContent("等待进行引用查找");

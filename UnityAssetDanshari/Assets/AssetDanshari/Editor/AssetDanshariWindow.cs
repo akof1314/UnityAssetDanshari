@@ -15,20 +15,23 @@ namespace AssetDanshari
         private AssetDanshariSetting m_AssetDanshariSetting;
         private Vector2 m_ScrollViewVector2;
         private ReorderableList m_ReorderableList;
+        private bool m_IsForceText;
 
         private void Awake()
         {
             titleContent.text = "资源断舍离";
         }
 
-        private void OnEnable()
-        {
-            Init();
-        }
-
         private void OnGUI()
         {
+            Init();
             var style = AssetDanshariStyle.Get();
+
+            if (!m_IsForceText)
+            {
+                EditorGUILayout.LabelField(style.forceText);
+                return;
+            }
 
             EditorGUILayout.BeginHorizontal(EditorStyles.toolbar);
             GUILayout.FlexibleSpace();
@@ -53,6 +56,12 @@ namespace AssetDanshari
         {
             if (m_AssetDanshariSetting == null)
             {
+                m_IsForceText = EditorSettings.serializationMode == SerializationMode.ForceText;
+                if (!m_IsForceText)
+                {
+                    return;
+                }
+
                 m_AssetDanshariSetting = AssetDatabase.LoadAssetAtPath<AssetDanshariSetting>(
                     "Assets/Editor/AssetDanshari/AssetDanshariSetting.asset");
                 if (m_AssetDanshariSetting == null)

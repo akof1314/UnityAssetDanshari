@@ -67,12 +67,6 @@ namespace AssetDanshari
             {
                 menu.AddItem(AssetDanshariStyle.Get().locationContext, false, OnContextSetActiveItem, id);
                 menu.AddItem(AssetDanshariStyle.Get().explorerContext, false, OnContextExplorerActiveItem, item);
-                menu.AddSeparator(String.Empty);
-            }
-
-            if (!IsSelectionContainsReverseItem())
-            {
-                AddContextMoveComm(menu);
             }
 
             if (menu.GetItemCount() > 0)

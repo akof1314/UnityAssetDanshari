@@ -107,7 +107,12 @@ namespace AssetDanshari
                     {
                         DrawToolbarExpandCollapse();
                     }
+                    EditorGUI.BeginChangeCheck();
                     m_AssetTreeView.searchString = m_SearchField.OnToolbarGUI(m_AssetTreeView.searchString);
+                    if (EditorGUI.EndChangeCheck() && GUIUtility.keyboardControl == 0)
+                    {
+                        m_AssetTreeView.SetFocusAndEnsureSelectedItem();
+                    }
                     if (GUILayout.Button(style.exportCsv, EditorStyles.toolbarButton, GUILayout.Width(70f)))
                     {
                         m_AssetTreeModel.ExportCsv();

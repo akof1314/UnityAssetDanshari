@@ -370,16 +370,29 @@ namespace AssetDanshari
                     continue;
                 }
 
-                var assetInfo2 = m_Model.GenAssetInfo(importedAsset);
-                assetInfo.AddChild(assetInfo2);
-
-                var item2 = new AssetTreeViewItem<AssetTreeModel.AssetInfo>(assetInfo2.id, -1, assetInfo2.displayName, assetInfo2);
-                if (assetInfo2.isFolder)
+                // 查找是否原先已经有了（被删除再导入）
+                var item2 = FindItemByAssetPath(item, importedAsset);
+                if (item2 != null)
                 {
-                    item2.icon = AssetDanshariStyle.Get().folderIcon;
+                    var assetInfo2 = GetItemAssetInfo(item2);
+                    if (assetInfo2 != null)
+                    {
+                        assetInfo2.added = true;
+                    }
                 }
-                assetInfo2.added = true;
-                item.AddChild(item2);
+                else
+                {
+                    var assetInfo2 = m_Model.GenAssetInfo(importedAsset);
+                    assetInfo.AddChild(assetInfo2);
+
+                    item2 = new AssetTreeViewItem<AssetTreeModel.AssetInfo>(assetInfo2.id, -1, assetInfo2.displayName, assetInfo2);
+                    if (assetInfo2.isFolder)
+                    {
+                        item2.icon = AssetDanshariStyle.Get().folderIcon;
+                    }
+                    assetInfo2.added = true;
+                    item.AddChild(item2);
+                }
             }
             SetupDepthsFromParentsAndChildren(rootItem);
             SortTreeViewNaturalCompare(rootItem);
