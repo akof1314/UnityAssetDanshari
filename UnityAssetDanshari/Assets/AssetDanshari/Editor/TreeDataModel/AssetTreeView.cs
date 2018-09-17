@@ -46,6 +46,7 @@ namespace AssetDanshari
             }
 
             SetupDepthsFromParentsAndChildren(root);
+            SortTreeViewNaturalCompare(rootItem);
             return root;
         }
 
@@ -377,6 +378,7 @@ namespace AssetDanshari
                     var assetInfo2 = GetItemAssetInfo(item2);
                     if (assetInfo2 != null)
                     {
+                        assetInfo2.deleted = false;
                         assetInfo2.added = true;
                     }
                 }
@@ -411,6 +413,7 @@ namespace AssetDanshari
                     if (assetInfo != null)
                     {
                         assetInfo.deleted = true;
+                        assetInfo.added = false;
                     }
                 }
                 return true;
@@ -440,7 +443,7 @@ namespace AssetDanshari
                         }
                     }
                 }
-                
+
                 // 移除掉额外显示的项，因为不需要变动
                 m_WatcherItems.RemoveAll(IsExtraItem);
             }
