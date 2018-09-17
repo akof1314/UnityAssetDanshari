@@ -22,6 +22,7 @@ namespace AssetDanshari
             public GUIContent duplicateTitle = new GUIContent("重复资源检查");
             public GUIContent duplicateWaiting = new GUIContent("等待进行检查重复资源");
             public GUIContent duplicateNothing = new GUIContent("所检查的文件夹没有重复资源");
+            public GUIContent duplicateManualAdd = new GUIContent("手动添加");
             public GUIContent duplicateHeaderContent = new GUIContent("名称");
             public GUIContent duplicateHeaderContent2 = new GUIContent("路径");
             public GUIContent duplicateHeaderContent3 = new GUIContent("大小");

@@ -305,6 +305,12 @@ namespace AssetDanshari
             }
         }
 
+        public void ForceRefresh()
+        {
+            SetExpanded(rootItem.id, false);
+            SetExpanded(rootItem.id, true);
+        }
+
         #region  数据变化
 
         private void OnWatcherImportedAssets(string[] importedAssets)
@@ -316,8 +322,7 @@ namespace AssetDanshari
             }
             if (OnWatcherImportedAssetsEvent(importedAssets, true))
             {
-                SetExpanded(rootItem.id, false);
-                SetExpanded(rootItem.id, true);
+                ForceRefresh();
                 Repaint();
             }
         }
@@ -344,8 +349,7 @@ namespace AssetDanshari
             }
             if (OnWatcherMovedAssetsEvent(movedFromAssetPaths, movedAssets, true))
             {
-                SetExpanded(rootItem.id, false);
-                SetExpanded(rootItem.id, true);
+                ForceRefresh();
                 Repaint();
             }
         }

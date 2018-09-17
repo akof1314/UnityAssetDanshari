@@ -25,13 +25,48 @@ namespace AssetDanshari
             base.SetDataPaths(refPathStr, pathStr, commonPathStr);
             var style = AssetDanshariStyle.Get();
 
-            var fileList = new List<FileMd5Info>();
             var resFileList = GetResFileList();
-
-            for (int i = 0; i < resFileList.Count;)
+            var fileList = GetFileMd5Infos(resFileList);
+            if (fileList == null || fileList.Count == 0)
             {
-                string file = resFileList[i];
-                EditorUtility.DisplayProgressBar(style.progressTitle, file, i * 1f / resFileList.Count);
+                return;
+            }
+
+            var rootInfo = new AssetInfo(GetAutoId(), String.Empty, String.Empty);
+            var groups = fileList.GroupBy(info => info.md5).Where(g => g.Count() > 1);
+            foreach (var group in groups)
+            {
+                AssetInfo dirInfo = new AssetInfo(GetAutoId(), String.Empty, String.Format(style.duplicateGroup, group.Count()));
+                dirInfo.isExtra = true;
+                rootInfo.AddChild(dirInfo);
+
+                foreach (var member in group)
+                {
+                    dirInfo.AddChild(GetAssetInfoByFileMd5Info(member));
+                }
+            }
+
+            if (rootInfo.hasChildren)
+            {
+                data = rootInfo;
+            }
+            EditorUtility.ClearProgressBar();
+        }
+
+        private List<FileMd5Info> GetFileMd5Infos(List<string> fileArray)
+        {
+            var style = AssetDanshariStyle.Get();
+            var fileList = new List<FileMd5Info>();
+
+            for (int i = 0; i < fileArray.Count;)
+            {
+                string file = fileArray[i];
+                if (string.IsNullOrEmpty(file))
+                {
+                    i++;
+                    continue;
+                }
+                EditorUtility.DisplayProgressBar(style.progressTitle, file, i * 1f / fileArray.Count);
                 try
                 {
                     using (var md5 = MD5.Create())
@@ -56,45 +91,32 @@ namespace AssetDanshari
                         style.continueStr, style.cancelStr))
                     {
                         EditorUtility.ClearProgressBar();
-                        return;
+                        return null;
                     }
                 }
             }
+            return fileList;
+        }
 
-            var rootInfo = new AssetInfo(GetAutoId(), String.Empty, String.Empty);
-            var groups = fileList.GroupBy(info => info.md5).Where(g => g.Count() > 1);
-            foreach (var group in groups)
+        private AssetInfo GetAssetInfoByFileMd5Info(FileMd5Info fileInfo)
+        {
+            AssetInfo info = GenAssetInfo(FullPathToRelative(fileInfo.filePath));
+            info.bindObj = fileInfo;
+
+            if (fileInfo.fileSize >= (1 << 20))
             {
-                AssetInfo dirInfo = new AssetInfo(GetAutoId(), String.Empty, String.Format(style.duplicateGroup, group.Count()));
-                dirInfo.isExtra = true;
-                rootInfo.AddChild(dirInfo);
-
-                foreach (var member in group)
-                {
-                    AssetInfo info = GenAssetInfo(FullPathToRelative(member.filePath));
-                    info.bindObj = member;
-                    dirInfo.AddChild(info);
-
-                    if (member.fileSize >= (1 << 20))
-                    {
-                        member.fileLength = string.Format("{0:F} MB", member.fileSize / 1024f / 1024f);
-                    }
-                    else if (member.fileSize >= (1 << 10))
-                    {
-                        member.fileLength = string.Format("{0:F} KB", member.fileSize / 1024f);
-                    }
-                    else
-                    {
-                        member.fileLength = string.Format("{0:F} B", member.fileSize);
-                    }
-                }
+                fileInfo.fileLength = string.Format("{0:F} MB", fileInfo.fileSize / 1024f / 1024f);
+            }
+            else if (fileInfo.fileSize >= (1 << 10))
+            {
+                fileInfo.fileLength = string.Format("{0:F} KB", fileInfo.fileSize / 1024f);
+            }
+            else
+            {
+                fileInfo.fileLength = string.Format("{0:F} B", fileInfo.fileSize);
             }
 
-            if (rootInfo.hasChildren)
-            {
-                data = rootInfo;
-            }
-            EditorUtility.ClearProgressBar();
+            return info;
         }
 
         /// <summary>
@@ -142,6 +164,32 @@ namespace AssetDanshari
                     }
                 }
             }
+        }
+
+        /// <summary>
+        /// 手动添加数据
+        /// </summary>
+        /// <param name="filePaths"></param>
+        public int AddManualData(string[] filePaths)
+        {
+            var fileList = GetFileMd5Infos(filePaths.ToList());
+            if (fileList == null || fileList.Count < 2 || !HasData())
+            {
+                EditorUtility.ClearProgressBar();
+                return 0;
+            }
+
+            var style = AssetDanshariStyle.Get();
+            AssetInfo dirInfo = new AssetInfo(GetAutoId(), String.Empty, String.Format(style.duplicateGroup, fileList.Count));
+            dirInfo.isExtra = true;
+            data.AddChild(dirInfo);
+
+            foreach (var member in fileList)
+            {
+                dirInfo.AddChild(GetAssetInfoByFileMd5Info(member));
+            }
+            EditorUtility.ClearProgressBar();
+            return dirInfo.id;
         }
 
         public override void ExportCsv()

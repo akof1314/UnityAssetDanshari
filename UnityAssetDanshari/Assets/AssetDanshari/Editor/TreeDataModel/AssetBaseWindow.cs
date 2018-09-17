@@ -113,6 +113,7 @@ namespace AssetDanshari
                     {
                         m_AssetTreeView.SetFocusAndEnsureSelectedItem();
                     }
+                    DrawToolbarMore();
                     if (GUILayout.Button(style.exportCsv, EditorStyles.toolbarButton, GUILayout.Width(70f)))
                     {
                         m_AssetTreeModel.ExportCsv();
@@ -134,6 +135,10 @@ namespace AssetDanshari
         protected virtual MultiColumnHeaderState CreateMultiColumnHeader()
         {
             return null;
+        }
+
+        protected virtual void DrawToolbarMore()
+        {
         }
 
         protected void DrawToolbarExpandCollapse()
