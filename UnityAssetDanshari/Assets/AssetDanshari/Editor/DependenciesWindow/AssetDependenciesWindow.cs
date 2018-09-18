@@ -1,10 +1,13 @@
-﻿using UnityEditor.IMGUI.Controls;
+﻿using UnityEditor;
+using UnityEditor.IMGUI.Controls;
 using UnityEngine;
 
 namespace AssetDanshari
 {
     public class AssetDependenciesWindow : AssetBaseWindow
     {
+        private bool m_FilterEmpty;
+
         private void Awake()
         {
             titleContent = AssetDanshariStyle.Get().dependenciesTitle;
@@ -13,6 +16,7 @@ namespace AssetDanshari
 
         protected override void InitTree(MultiColumnHeader multiColumnHeader)
         {
+            m_FilterEmpty = false;
             m_AssetTreeModel = new AssetDependenciesTreeModel();
             m_AssetTreeView = new AssetDependenciesTreeView(m_TreeViewState, multiColumnHeader, m_AssetTreeModel);
         }
@@ -50,6 +54,17 @@ namespace AssetDanshari
             };
 
             return new MultiColumnHeaderState(columns);
+        }
+
+        protected override void DrawToolbarMore()
+        {
+            EditorGUI.BeginChangeCheck();
+            m_FilterEmpty = GUILayout.Toggle(m_FilterEmpty, AssetDanshariStyle.Get().dependenciesFilter, EditorStyles.toolbarButton,
+                GUILayout.Width(70f));
+            if (EditorGUI.EndChangeCheck() && m_AssetTreeView != null)
+            {
+                (m_AssetTreeView as AssetDependenciesTreeView).SetFilterEmpty(m_FilterEmpty);
+            }
         }
     }
 }

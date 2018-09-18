@@ -36,6 +36,7 @@ namespace AssetDanshari
             public GUIContent dependenciesNothing = new GUIContent("资源文件夹没有任何数据");
             public GUIContent dependenciesHeaderContent2 = new GUIContent("被引用的路径");
             public GUIContent dependenciesDelete = new GUIContent("删除选中资源");
+            public GUIContent dependenciesFilter = new GUIContent("过滤为空");
 
             public GUIContent referenceTitle = new GUIContent("引用查找");
             public GUIContent referenceWaiting = new GUIContent("等待进行引用查找");

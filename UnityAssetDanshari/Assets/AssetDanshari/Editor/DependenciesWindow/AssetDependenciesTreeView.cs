@@ -107,5 +107,50 @@ namespace AssetDanshari
             }
             Repaint();
         }
+
+        public void SetFilterEmpty(bool filterEmpty)
+        {
+            Reload();
+            if (filterEmpty)
+            {
+                // 剔除有被引用的
+                SetFilterEmptyStay(rootItem);
+            }
+            ForceRefresh();
+            Repaint();
+        }
+
+        private void SetFilterEmptyStay(TreeViewItem item)
+        {
+            var assetInfo = GetItemAssetInfo(item);
+            if (assetInfo == null)
+            {
+                if (item.hasChildren)
+                {
+                    for (var i = item.children.Count - 1; i >= 0; i--)
+                    {
+                        var child = item.children[i];
+                        SetFilterEmptyStay(child);
+                    }
+                }
+                return;
+            }
+
+            if (!assetInfo.isFolder && assetInfo.hasChildren && assetInfo.children.Count > 0)
+            {
+                item.parent.children.Remove(item);
+                item.parent = null;
+                return;
+            }
+
+            if (assetInfo.isFolder && item.hasChildren)
+            {
+                for (var i = item.children.Count - 1; i >= 0; i--)
+                {
+                    var child = item.children[i];
+                    SetFilterEmptyStay(child);
+                }
+            }
+        }
     }
 }
