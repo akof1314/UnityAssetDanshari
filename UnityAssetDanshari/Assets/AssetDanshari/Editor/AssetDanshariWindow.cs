@@ -16,6 +16,7 @@ namespace AssetDanshari
         private Vector2 m_ScrollViewVector2;
         private ReorderableList m_ReorderableList;
         private bool m_IsForceText;
+        private AssetDanshariHandlerDemo m_AssetDanshariHandlerDemo;
 
         private void Awake()
         {
@@ -84,6 +85,11 @@ namespace AssetDanshari
                 m_ReorderableList.drawHeaderCallback = OnDrawHeaderCallback;
                 m_ReorderableList.drawElementCallback = OnDrawElementCallback;
                 m_ReorderableList.elementHeight += 55;
+            }
+
+            if (m_AssetDanshariHandlerDemo == null)
+            {
+                m_AssetDanshariHandlerDemo = new AssetDanshariHandlerDemo();
             }
         }
 

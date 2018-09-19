@@ -189,7 +189,7 @@ namespace AssetDanshari
                 dirInfo.AddChild(GetAssetInfoByFileMd5Info(member));
             }
             EditorUtility.ClearProgressBar();
-            return dirInfo.id;
+            return dirInfo.children[dirInfo.children.Count - 1].id;
         }
 
         public override void ExportCsv()

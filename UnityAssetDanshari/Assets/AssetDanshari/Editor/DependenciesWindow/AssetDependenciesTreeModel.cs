@@ -33,6 +33,12 @@ namespace AssetDanshari
                     }
                 }
             }
+
+            if (AssetDanshariHandler.onDependenciesLoadDataMore != null)
+            {
+                AssetDanshariHandler.onDependenciesLoadDataMore(pathStr, resInfos, this);
+            }
+
             MergeAssetInfo(rootInfo, resInfos);
 
             if (rootInfo.hasChildren)

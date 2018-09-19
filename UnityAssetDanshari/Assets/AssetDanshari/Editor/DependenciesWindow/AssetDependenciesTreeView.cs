@@ -69,6 +69,11 @@ namespace AssetDanshari
                 AddContextMoveComm(menu);
                 menu.AddSeparator(String.Empty);
                 menu.AddItem(AssetDanshariStyle.Get().dependenciesDelete, false, OnContextDeleteThisItem);
+
+                if (AssetDanshariHandler.onDependenciesContextDraw != null)
+                {
+                    AssetDanshariHandler.onDependenciesContextDraw(menu);
+                }
             }
 
             if (menu.GetItemCount() > 0)
