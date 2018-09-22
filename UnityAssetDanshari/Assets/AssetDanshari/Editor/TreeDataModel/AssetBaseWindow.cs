@@ -18,6 +18,7 @@ namespace AssetDanshari
         protected AssetTreeModel m_AssetTreeModel;
         protected AssetTreeView m_AssetTreeView;
         private Action m_CallbackAfterFrame;
+        private double m_CallbackDelayTime;
 
         [SerializeField]
         protected TreeViewState m_TreeViewState;
@@ -31,12 +32,27 @@ namespace AssetDanshari
 
         private void OnGUI()
         {
-            Init();
             if (m_CallbackAfterFrame != null)
             {
-                m_CallbackAfterFrame();
-                m_CallbackAfterFrame = null;
+                if (m_SearchField == null)
+                {
+                    // 延迟处理，防止MAC上闪退
+                    m_CallbackDelayTime = EditorApplication.timeSinceStartup + 0.5f;
+                }
+
+                if (m_CallbackDelayTime < EditorApplication.timeSinceStartup)
+                {
+                    var cb = m_CallbackAfterFrame;
+                    m_CallbackAfterFrame = null;
+                    cb();
+                    RemoveNotification();
+                }
+                else
+                {
+                    Repaint();
+                }
             }
+            Init();
             DrawGUI(GUIContent.none, GUIContent.none, false);
         }
 
@@ -176,7 +192,6 @@ namespace AssetDanshari
 
         private void SetCheckPaths(string refPaths, string paths, string commonPaths)
         {
-            RemoveNotification();
             m_CallbackAfterFrame = () =>
             {
                 m_AssetTreeModel.SetDataPaths(refPaths, paths, commonPaths);

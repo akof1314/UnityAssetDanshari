@@ -46,7 +46,7 @@ namespace AssetDanshari
             }
 
             SetupDepthsFromParentsAndChildren(root);
-            SortTreeViewNaturalCompare(rootItem);
+            SortTreeViewNaturalCompare(root);
             return root;
         }
 
