@@ -62,6 +62,7 @@ namespace AssetDanshari
             menu.AddItem(AssetDanshariStyle.Get().explorerContext, false, OnContextExplorerActiveItem, item);
             menu.AddSeparator(String.Empty);
             AddContextMoveComm(menu);
+            menu.AddItem(AssetDanshariStyle.Get().dependenciesTitle, false, OnContextFindDependenciesActiveItem, item);
             menu.AddSeparator(String.Empty);
             menu.AddItem(AssetDanshariStyle.Get().duplicateContextOnlyUseThis, false, OnContextUseThisItem, item);
             menu.ShowAsContext();
@@ -75,6 +76,18 @@ namespace AssetDanshari
                 var itemParent = item.parent as AssetTreeViewItem<AssetTreeModel.AssetInfo>;
                 model.SetUseThis(itemParent.data, item.data);
                 Repaint();
+            }
+        }
+
+        private void OnContextFindDependenciesActiveItem(object userdata)
+        {
+            var item = userdata as AssetTreeViewItem<AssetTreeModel.AssetInfo>;
+            if (item != null)
+            {
+                if (AssetDanshariHandler.onDependenciesFindItem != null)
+                {
+                    AssetDanshariHandler.onDependenciesFindItem(item.data.fileRelativePath);
+                }
             }
         }
 

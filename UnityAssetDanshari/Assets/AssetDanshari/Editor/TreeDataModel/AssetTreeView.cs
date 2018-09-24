@@ -26,7 +26,7 @@ namespace AssetDanshari
             AssetDanshariWatcher.onMovedAssets += OnWatcherMovedAssets;
         }
 
-        public void Destroy()
+        public virtual void Destroy()
         {
             AssetDanshariWatcher.onImportedAssets -= OnWatcherImportedAssets;
             AssetDanshariWatcher.onDeletedAssets -= OnWatcherDeletedAssets;

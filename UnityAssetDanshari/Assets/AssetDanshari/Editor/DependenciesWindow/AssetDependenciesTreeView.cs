@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using UnityEngine;
 using UnityEditor;
 using UnityEditor.IMGUI.Controls;
@@ -12,6 +13,13 @@ namespace AssetDanshari
         public AssetDependenciesTreeView(TreeViewState state, MultiColumnHeader multiColumnHeader, AssetTreeModel model) : base(state, multiColumnHeader, model)
         {
             this.model = model as AssetDependenciesTreeModel;
+            AssetDanshariHandler.onDependenciesFindItem += OnDependenciesFindItem;
+        }
+
+        public override void Destroy()
+        {
+            base.Destroy();
+            AssetDanshariHandler.onDependenciesFindItem -= OnDependenciesFindItem;
         }
 
         protected override void CellGUI(Rect cellRect, AssetTreeViewItem<AssetTreeModel.AssetInfo> item, int column, ref RowGUIArgs args)
@@ -155,6 +163,16 @@ namespace AssetDanshari
                     var child = item.children[i];
                     SetFilterEmptyStay(child);
                 }
+            }
+        }
+
+        private void OnDependenciesFindItem(string assetPath)
+        {
+            var item = FindItemByAssetPath(rootItem, assetPath);
+            if (item != null)
+            {
+                SetSelection(new List<int>() { item.id }, TreeViewSelectionOptions.RevealAndFrame);
+                Repaint();
             }
         }
     }
