@@ -336,7 +336,7 @@ namespace AssetDanshari
         {
             foreach (var info in infoList)
             {
-                var parent = FindAssetInfo(rootInfo, Path.GetDirectoryName(info.fileRelativePath));
+                var parent = FindAssetInfo(rootInfo, PathToStandardized(Path.GetDirectoryName(info.fileRelativePath)));
                 if (parent != null)
                 {
                     parent.AddChild(info);
