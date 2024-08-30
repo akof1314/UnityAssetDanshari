@@ -1,0 +1,9 @@
+{
+    "name": "WuHuan.AssetDanshari.Editor",
+    "references": [],
+    "optionalUnityReferences": [],
+    "includePlatforms": [
+        "Editor"
+    ],
+    "excludePlatforms": []
+}

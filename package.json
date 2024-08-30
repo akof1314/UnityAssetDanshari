@@ -1,0 +1,19 @@
+{
+  "name": "com.wuhuan.assetdanshari",
+  "displayName": "Asset Danshari",
+  "version": "1.0.0",
+  "documentationUrl": "https://github.com/akof1314/UnityAssetDanshari",
+  "description": "Asset Danshar, asset cleaning for duplicate and referenced searches.\n资源断舍离，资源清理重复以及引用被引用查找。",
+  "category": "Editor",
+  "author": {
+    "name": "Wuhuan",
+    "url": "https://github.com/akof1314"
+  },
+  "samples": [
+    {
+      "displayName": "Simple Demo",
+      "description": "一个简单的示例。",
+      "path": "Samples~"
+    }
+  ]
+}
