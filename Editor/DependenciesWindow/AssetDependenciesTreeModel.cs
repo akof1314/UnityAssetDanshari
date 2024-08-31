@@ -7,16 +7,16 @@ namespace AssetDanshari
 {
     public class AssetDependenciesTreeModel : AssetTreeModel
     {
-        public override void SetDataPaths(string refPathStr, string pathStr, string commonPathStr)
+        public override void SetDataPaths(string refPathStr, string pathStr, string commonPathStr, string grepPath)
         {
-            base.SetDataPaths(refPathStr, pathStr, commonPathStr);
+            base.SetDataPaths(refPathStr, pathStr, commonPathStr, grepPath);
 
             var resFileList = GetResFileList();
             var guidList = GetGuidFromFileList(resFileList);
             var fileList = GetRefFileList();
             var searchRetList = GetSearchResultList(fileList.Count, guidList.Count);
 
-            ThreadDoFilesTextSearchReplace(fileList, guidList, String.Empty, searchRetList);
+            ThreadDoFilesTextSearchReplace(grepPath, refPaths, fileList, guidList, String.Empty, searchRetList);
             var rootInfo = DirToAssetInfoTree(resPaths);
             var resInfos = FileListToAssetInfos(resFileList);
 

@@ -8,9 +8,9 @@ namespace AssetDanshari
 {
     public class AssetReferenceTreeModel : AssetTreeModel
     {
-        public override void SetDataPaths(string refPathStr, string pathStr, string commonPathStr)
+        public override void SetDataPaths(string refPathStr, string pathStr, string commonPathStr, string grepPath)
         {
-            base.SetDataPaths(refPathStr, pathStr, commonPathStr);
+            base.SetDataPaths(refPathStr, pathStr, commonPathStr, grepPath);
             assetPaths = refPathStr;
 
             var resFileList = GetResFileList();
@@ -18,7 +18,7 @@ namespace AssetDanshari
             var fileList = GetRefFileList();
             var searchRetList = GetSearchResultList(fileList.Count, guidList.Count);
 
-            ThreadDoFilesTextSearchReplace(fileList, guidList, String.Empty, searchRetList);
+            ThreadDoFilesTextSearchReplace(grepPath, refPaths, fileList, guidList, String.Empty, searchRetList);
             var rootInfo = DirToAssetInfoTree(refPaths);
             var refInfos = FileListToAssetInfos(fileList);
 

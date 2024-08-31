@@ -20,9 +20,9 @@ namespace AssetDanshari
             public string md5;
         }
 
-        public override void SetDataPaths(string refPathStr, string pathStr, string commonPathStr)
+        public override void SetDataPaths(string refPathStr, string pathStr, string commonPathStr, string grepPath)
         {
-            base.SetDataPaths(refPathStr, pathStr, commonPathStr);
+            base.SetDataPaths(refPathStr, pathStr, commonPathStr, grepPath);
             var style = AssetDanshariStyle.Get();
 
             var resFileList = GetResFileList();
@@ -145,7 +145,7 @@ namespace AssetDanshari
             string replaceStr = AssetDatabase.AssetPathToGUID(useInfo.fileRelativePath);
             List<string> fileList = GetRefFileList();
 
-            ThreadDoFilesTextSearchReplace(fileList, patterns, replaceStr, GetSearchResultList(fileList.Count, 0));
+            ThreadDoFilesTextSearchReplace(grepPath, refPaths, fileList, patterns, replaceStr, GetSearchResultList(fileList.Count, 0));
             EditorUtility.DisplayProgressBar(style.progressTitle, style.deleteFile, 0.98f);
             SetRemoveAllOther(group, useInfo);
             EditorUtility.ClearProgressBar();

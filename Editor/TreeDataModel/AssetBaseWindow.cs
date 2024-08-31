@@ -7,18 +7,16 @@ namespace AssetDanshari
 {
     public class AssetBaseWindow : EditorWindow
     {
-        public static void CheckPaths<T>(string refPaths, string paths, string commonPaths) where T : AssetBaseWindow
+        public static void CheckPaths<T>(string refPaths, string paths, string commonPaths, string grepPath) where T : AssetBaseWindow
         {
             var window = GetWindow<T>();
             window.Focus();
-            window.SetCheckPaths(refPaths, paths, commonPaths);
+            window.SetCheckPaths(refPaths, paths, commonPaths, grepPath);
         }
 
         private SearchField m_SearchField;
         protected AssetTreeModel m_AssetTreeModel;
         protected AssetTreeView m_AssetTreeView;
-        private Action m_CallbackAfterFrame;
-        private double m_CallbackDelayTime;
 
         [SerializeField]
         protected TreeViewState m_TreeViewState;
@@ -32,26 +30,6 @@ namespace AssetDanshari
 
         private void OnGUI()
         {
-            if (m_CallbackAfterFrame != null)
-            {
-                if (m_SearchField == null)
-                {
-                    // 延迟处理，防止MAC上闪退
-                    m_CallbackDelayTime = EditorApplication.timeSinceStartup + 0.5f;
-                }
-
-                if (m_CallbackDelayTime < EditorApplication.timeSinceStartup)
-                {
-                    var cb = m_CallbackAfterFrame;
-                    m_CallbackAfterFrame = null;
-                    cb();
-                    RemoveNotification();
-                }
-                else
-                {
-                    Repaint();
-                }
-            }
             Init();
             DrawGUI(GUIContent.none, GUIContent.none, false);
         }
@@ -190,18 +168,17 @@ namespace AssetDanshari
             }
         }
 
-        private void SetCheckPaths(string refPaths, string paths, string commonPaths)
+        private void SetCheckPaths(string refPaths, string paths, string commonPaths, string grepPath)
         {
-            m_CallbackAfterFrame = () =>
+            EditorApplication.delayCall += () =>
             {
-                m_AssetTreeModel.SetDataPaths(refPaths, paths, commonPaths);
+                m_AssetTreeModel.SetDataPaths(refPaths, paths, commonPaths, grepPath);
                 if (m_AssetTreeModel.HasData())
                 {
                     m_AssetTreeView.Reload();
                     m_AssetTreeView.ExpandAllExceptLast();
                 }
             };
-            Repaint();
         }
     }
 }

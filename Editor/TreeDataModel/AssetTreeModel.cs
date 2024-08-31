@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 using System.Text;
 using System.Threading;
@@ -60,6 +61,7 @@ namespace AssetDanshari
         /// 右下角的路径
         /// </summary>
         public string assetPaths { get; protected set; }
+        protected string grepPath { get; private set; }
 
         protected string[] refPaths { get; private set; }
         protected string[] resPaths { get; private set; }
@@ -92,7 +94,7 @@ namespace AssetDanshari
             return data != null;
         }
 
-        public virtual void SetDataPaths(string refPathStr, string pathStr, string commonPathStr)
+        public virtual void SetDataPaths(string refPathStr, string pathStr, string commonPathStr, string grepFilePath)
         {
             data = null;
             ResetAutoId();
@@ -101,6 +103,7 @@ namespace AssetDanshari
             resPaths = AssetDanshariUtility.PathStrToArray(pathStr);
             commonPaths = AssetDanshariUtility.PathStrToArray(commonPathStr);
             m_DataPathLen = Application.dataPath.Length - 6;
+            grepPath = grepFilePath;
 
             commonDirs = new List<AssetInfo>();
             foreach (var commonPath in commonPaths)
@@ -177,7 +180,7 @@ namespace AssetDanshari
             return PathToStandardized(path.Substring(m_DataPathLen));
         }
 
-        public string PathToStandardized(string path)
+        public static string PathToStandardized(string path)
         {
             return path.Replace('\\', '/');
         }
@@ -196,6 +199,12 @@ namespace AssetDanshari
             {
                 if (!Directory.Exists(refPath))
                 {
+                    // 不是目录，那么可能是资源文件
+                    if (File.Exists(refPath))
+                    {
+                        fileList.Add(PathToStandardized(refPath));
+                    }
+
                     continue;
                 }
 
@@ -229,6 +238,12 @@ namespace AssetDanshari
             {
                 if (!Directory.Exists(resPath))
                 {
+                    // 不是目录，那么可能是资源文件
+                    if (File.Exists(resPath))
+                    {
+                        fileList.Add(PathToStandardized(resPath));
+                    }
+
                     continue;
                 }
 
@@ -289,6 +304,13 @@ namespace AssetDanshari
             {
                 if (!Directory.Exists(path))
                 {
+                    // 不是目录，那么可能是文件，文件的话就构造一个文件夹
+                    if (File.Exists(path))
+                    {
+                        AssetInfo info2 = GenAssetInfo(Path.GetDirectoryName(path));
+                        rooInfo.AddChild(info2);
+                    }
+
                     continue;
                 }
 
@@ -377,15 +399,144 @@ namespace AssetDanshari
 
         #region  多线程执行
 
-        private class JobFileTextSearchReplace
+        private class JobBaseTextSearchReplace
+        {
+            public ManualResetEvent doneEvent;
+            public string exception;
+        }
+
+        private class JobGrepTextSearchReplace : JobBaseTextSearchReplace
+        {
+            private string m_GrepPath;
+            private string[] m_SearchList;
+            private List<string> m_Patterns;
+            private string m_ReplaceStr;
+            private List<string> m_FileList;
+            private bool[][] m_SearchRetList;
+
+            public JobGrepTextSearchReplace(string grepFilePath, string[] searchList, List<string> patterns, string replaceStr, List<string> fileList, bool[][] searchRetList)
+            {
+                m_GrepPath = grepFilePath;
+                m_SearchList = searchList;
+                m_Patterns = patterns;
+                m_ReplaceStr = replaceStr;
+                m_FileList = fileList;
+                m_SearchRetList = searchRetList;
+                doneEvent = new ManualResetEvent(false);
+                exception = String.Empty;
+            }
+
+            public void ThreadPoolCallback(System.Object threadContext)
+            {
+                try
+                {
+                    string patternsFile = "Library/AssetDansharipPatterns.txt";
+                    File.WriteAllLines(patternsFile, m_Patterns);
+
+                    ProcessStartInfo startInfo = new ProcessStartInfo(m_GrepPath)
+                    {
+                        UseShellExecute = false,
+                        CreateNoWindow = true,
+                        RedirectStandardOutput = true,
+                        Arguments = $"-f {patternsFile} -o -N -F --no-config --no-ignore"
+                    };
+
+                    foreach (var path in m_SearchList)
+                    {
+                        startInfo.Arguments += $" \"{path}\"";
+                    }
+
+                    Dictionary<string, HashSet<string>> matchDict = new Dictionary<string, HashSet<string>>();
+                    using (Process process = new Process())
+                    {
+                        process.StartInfo = startInfo;
+
+                        try
+                        {
+                            process.Start();
+
+                            using (StreamReader reader = process.StandardOutput)
+                            {
+                                string line;
+                                while ((line = reader.ReadLine()) != null)
+                                {
+                                    if (!string.IsNullOrEmpty(line))
+                                    {
+                                        var pos = line.LastIndexOf(':');
+                                        if (pos > -1)
+                                        {
+                                            var matchFile = PathToStandardized(line.Substring(0, pos));
+                                            var matchGuid = line.Substring(pos + 1);
+
+                                            if (!matchDict.TryGetValue(matchFile, out var matchSet))
+                                            {
+                                                matchSet = new HashSet<string>();
+                                                matchDict.Add(matchFile, matchSet);
+                                            }
+
+                                            matchSet.Add(matchGuid);
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                        catch (Exception ex)
+                        {
+                            exception += ex.Message + "\n";
+                        }
+                    }
+
+                    // 映射到原数组
+                    for (int i = 0; i < m_FileList.Count; i++)
+                    {
+                        if (matchDict.TryGetValue(m_FileList[i], out var matchSet))
+                        {
+                            // 搜索
+                            if (string.IsNullOrEmpty(m_ReplaceStr))
+                            {
+                                for (int j = 0; j < m_Patterns.Count; j++)
+                                {
+                                    if (matchSet.Contains(m_Patterns[j]))
+                                    {
+                                        m_SearchRetList[i][j] = true;
+                                    }
+                                }
+                            }
+                            else
+                            {
+                                string text = File.ReadAllText(m_FileList[i]);
+
+                                StringBuilder sb = new StringBuilder(text, text.Length + 2);
+
+                                foreach (var pattern in m_Patterns)
+                                {
+                                    if (matchSet.Contains(pattern))
+                                    {
+                                        sb.Replace(pattern, m_ReplaceStr);
+                                    }
+                                }
+
+                                string text2 = sb.ToString();
+                                File.WriteAllText(m_FileList[i], text2);
+                            }
+                        }
+                    }
+                }
+                catch (Exception ex)
+                {
+                    exception = ex.Message;
+                }
+
+                doneEvent.Set();
+            }
+        }
+
+        private class JobFileTextSearchReplace : JobBaseTextSearchReplace
         {
             private string m_Path;
             private List<string> m_Patterns;
             private string m_ReplaceStr;
             private bool[] m_SearchRet;
-
-            public ManualResetEvent doneEvent;
-            public string exception;
 
             public JobFileTextSearchReplace(string path, List<string> patterns, string replaceStr, bool[] searchRet)
             {
@@ -437,9 +588,14 @@ namespace AssetDanshari
             }
         }
 
-        protected void ThreadDoFilesTextSearchReplace(List<string> fileList, List<string> patterns, string replaceStr, bool[][] searchRetList)
+        protected void ThreadDoFilesTextSearchReplace(string grepFilePath, string[] searchList, List<string> fileList, List<string> patterns, string replaceStr, bool[][] searchRetList)
         {
-            List<JobFileTextSearchReplace> jobList = new List<JobFileTextSearchReplace>();
+            if (fileList.Count == 0)
+            {
+                return;
+            }
+
+            List<JobBaseTextSearchReplace> jobList = new List<JobBaseTextSearchReplace>();
             List<ManualResetEvent> eventList = new List<ManualResetEvent>();
 
             int numFiles = fileList.Count;
@@ -448,19 +604,34 @@ namespace AssetDanshari
 
             int timeout = 600000;  // 10 分钟超时
 
-            for (var i = 0; i < fileList.Count; i++)
+            if (string.IsNullOrWhiteSpace(grepFilePath))
             {
-                JobFileTextSearchReplace job = new JobFileTextSearchReplace(fileList[i], patterns, replaceStr, searchRetList[i]);
+                for (var i = 0; i < fileList.Count; i++)
+                {
+                    JobFileTextSearchReplace job = new JobFileTextSearchReplace(fileList[i], patterns, replaceStr, searchRetList[i]);
+                    jobList.Add(job);
+                    eventList.Add(job.doneEvent);
+                    ThreadPool.QueueUserWorkItem(job.ThreadPoolCallback);
+
+                    if (eventList.Count >= Environment.ProcessorCount)
+                    {
+                        WaitForDoFile(eventList, timeout);
+                        AssetDanshariUtility.DisplayThreadProgressBar(numFiles, numFinished);
+                        numFinished++;
+                    }
+                }
+            }
+            else
+            {
+                JobGrepTextSearchReplace job = new JobGrepTextSearchReplace(grepFilePath, searchList, patterns, replaceStr, fileList, searchRetList);
                 jobList.Add(job);
                 eventList.Add(job.doneEvent);
                 ThreadPool.QueueUserWorkItem(job.ThreadPoolCallback);
 
-                if (eventList.Count >= Environment.ProcessorCount)
-                {
-                    WaitForDoFile(eventList, timeout);
-                    AssetDanshariUtility.DisplayThreadProgressBar(numFiles, numFinished);
-                    numFinished++;
-                }
+                // 超时时间按一个文件一分钟来算
+                timeout = fileList.Count * 60000;
+                AssetDanshariUtility.DisplayTimeThreadProgressBar();
+                numFinished = fileList.Count - 1;
             }
 
             while (eventList.Count > 0)
@@ -474,7 +645,7 @@ namespace AssetDanshari
             {
                 if (!string.IsNullOrEmpty(job.exception))
                 {
-                    Debug.LogError(job.exception);
+                    UnityEngine.Debug.LogError(job.exception);
                 }
             }
         }
@@ -486,7 +657,11 @@ namespace AssetDanshari
             {
                 // 超时
             }
-            events.RemoveAt(finished);
+
+            if (events.Count > finished)
+            {
+                events.RemoveAt(finished);
+            }
         }
 
         #endregion

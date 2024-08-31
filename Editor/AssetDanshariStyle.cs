@@ -12,12 +12,16 @@ namespace AssetDanshari
             public GUIContent exportCsv = new GUIContent("导出 CSV");
             public GUIContent forceText = new GUIContent("Asset Serialization must be ForceText");
             public GUIContent assetReferenceTitle = new GUIContent("检查列表");
-            public GUIContent assetReferenceAsset = new GUIContent("资源目录", "存放资源的文件夹路径");
+            public GUIContent assetReferenceAsset = new GUIContent("资源文件/目录", "存放资源的文件夹路径");
             public GUIContent assetReferenceAssetCommon = new GUIContent("公共资源目录", "整理资源时所放置的公共文件夹路径");
-            public GUIContent assetReferenceReference = new GUIContent("引用目录", "使用到资源的预制文件夹路径");
+            public GUIContent assetReferenceReference = new GUIContent("引用文件/目录", "使用到资源的预制文件夹路径");
             public GUIContent assetReferenceCheckDup = new GUIContent("检查重复");
             public GUIContent assetReferenceCheckRef = new GUIContent("引用查找");
             public GUIContent assetReferenceDepend = new GUIContent("被引用查找");
+
+            public GUIContent grepPath = new GUIContent("ripgrep 路径");
+            public GUIContent grepNotSet = new GUIContent("ripgrep 未设置");
+            public GUIContent grepEnabled = new GUIContent("ripgrep 已启用");
 
             public GUIContent duplicateTitle = new GUIContent("重复资源检查");
             public GUIContent duplicateWaiting = new GUIContent("等待进行检查重复资源");
@@ -48,6 +52,7 @@ namespace AssetDanshari
             public GUIContent iconNew = EditorGUIUtility.IconContent("AS Badge New");
 
             public string progressTitle = "正在处理";
+            public string progressTime = "请耐心等待...";
             public string errorTitle = "错误信息";
             public string continueStr = "继续执行";
             public string cancelStr = "取消";

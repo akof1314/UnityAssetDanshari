@@ -17,12 +17,14 @@ namespace AssetDanshari
         private Vector2 m_ScrollViewVector2;
         private ReorderableList m_ReorderableList;
         private bool m_IsForceText;
+        private bool m_ShowGrepSetting;
 
         private static readonly string kUserSettingsPath = "UserSettings/AssetDanshariSetting.asset";
 
         private void Awake()
         {
             titleContent.text = "资源断舍离";
+            minSize = new Vector2(600, 340);
         }
 
         private void OnGUI()
@@ -37,8 +39,31 @@ namespace AssetDanshari
             }
 
             EditorGUILayout.BeginHorizontal(EditorStyles.toolbar);
-            
+            GUILayout.FlexibleSpace();
+            EditorGUI.BeginChangeCheck();
+            m_ShowGrepSetting = GUILayout.Toggle(m_ShowGrepSetting, string.IsNullOrEmpty(m_AssetDanshariSetting.ripgrepPath) ?
+                    style.grepNotSet : style.grepEnabled, EditorStyles.toolbarButton);
+            if (EditorGUI.EndChangeCheck())
+            {
+                SaveSetting();
+            }
             EditorGUILayout.EndHorizontal();
+            if (m_ShowGrepSetting)
+            {
+                EditorGUILayout.BeginHorizontal();
+                m_AssetDanshariSetting.ripgrepPath = EditorGUILayout.TextField(style.grepPath, m_AssetDanshariSetting.ripgrepPath);
+                if (GUILayout.Button("O", GUILayout.ExpandWidth(false)))
+                {
+                    var path = EditorUtility.OpenFilePanel(style.grepPath.text, "", "*");
+                    if (!string.IsNullOrEmpty(path))
+                    {
+                        GUI.FocusControl(null);
+                        m_AssetDanshariSetting.ripgrepPath = path;
+                    }
+                }
+                EditorGUILayout.EndHorizontal();
+                EditorGUILayout.Space();
+            }
 
             if (m_ReorderableList != null)
             {
@@ -74,14 +99,15 @@ namespace AssetDanshari
                 }
                 if (m_AssetDanshariSetting == null)
                 {
-                    m_AssetDanshariSetting = CreateInstance<AssetDanshariSetting>();
-                    string folderPath = Path.GetDirectoryName(kUserSettingsPath);
-                    if (!Directory.Exists(folderPath))
+                    if (AssetDanshariHandler.onCreateSetting != null)
                     {
-                        Directory.CreateDirectory(folderPath);
+                        m_AssetDanshariSetting = AssetDanshariHandler.onCreateSetting();
                     }
-
-                    InternalEditorUtility.SaveToSerializedFileAndForget(new[] { m_AssetDanshariSetting }, kUserSettingsPath, true);
+                    else
+                    {
+                        m_AssetDanshariSetting = CreateInstance<AssetDanshariSetting>();
+                    }
+                    SaveSetting();
                 }
             }
 
@@ -115,7 +141,7 @@ namespace AssetDanshari
             info.title = EditorGUI.TextField(rect, info.title);
             rect.y += EditorGUIUtility.singleLineHeight + 2;
 
-            Rect rect2 = new Rect(rect) { width = 50f };
+            Rect rect2 = new Rect(rect) { width = 85f };
             Rect rect3 = new Rect(rect) { x = rect2.x + rect2.width, width = rect.width - rect2.width - 150f };
             Rect rect4 = new Rect(rect) { x = rect3.x + rect3.width + 5f, width = 70f };
             Rect rect5 = new Rect(rect) { x = rect4.x + rect4.width + 5f, width = 70f };
@@ -127,7 +153,7 @@ namespace AssetDanshari
             {
                 SaveSetting();
                 AssetBaseWindow.CheckPaths<AssetReferenceWindow>(info.referenceFolder,
-                    info.assetFolder, info.assetCommonFolder);
+                    info.assetFolder, info.assetCommonFolder, m_AssetDanshariSetting.ripgrepPath);
             }
 
             rect2.y += EditorGUIUtility.singleLineHeight + 2;
@@ -143,19 +169,17 @@ namespace AssetDanshari
             {
                 SaveSetting();
                 AssetBaseWindow.CheckPaths<AssetDuplicateWindow>(info.referenceFolder,
-                    info.assetFolder, info.assetCommonFolder);
+                    info.assetFolder, info.assetCommonFolder, m_AssetDanshariSetting.ripgrepPath);
             }
             if (GUI.Button(rect5, style.assetReferenceDepend))
             {
                 SaveSetting();
                 AssetBaseWindow.CheckPaths<AssetDependenciesWindow>(info.referenceFolder,
-                    info.assetFolder, info.assetCommonFolder);
+                    info.assetFolder, info.assetCommonFolder, m_AssetDanshariSetting.ripgrepPath);
             }
 
-            rect2.width += 25f;
             rect2.y += EditorGUIUtility.singleLineHeight + 2;
             rect3.y += EditorGUIUtility.singleLineHeight + 2;
-            rect3.x += 25f;
             rect3.width = rect.width - rect2.width;
             EditorGUI.LabelField(rect2, style.assetReferenceAssetCommon);
             EditorGUI.BeginChangeCheck();
@@ -180,7 +204,17 @@ namespace AssetDanshari
                         DragAndDrop.AcceptDrag();
                         GUI.changed = true;
 
-                        return AssetDanshariUtility.PathArrayToStr(DragAndDrop.paths);
+                        //  安装ctrl表示添加
+                        if (Event.current.modifiers == EventModifiers.Control)
+                        {
+                            var labels = AssetDanshariUtility.PathStrToArray(label);
+                            ArrayUtility.AddRange(ref labels, DragAndDrop.paths);
+                            return AssetDanshariUtility.PathArrayToStr(labels);
+                        }
+                        else
+                        {
+                            return AssetDanshariUtility.PathArrayToStr(DragAndDrop.paths);
+                        }
                     }
                 }
             }

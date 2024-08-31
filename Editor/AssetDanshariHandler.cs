@@ -6,6 +6,8 @@ namespace AssetDanshari
 {
     public class AssetDanshariHandler
     {
+        public static Func<AssetDanshariSetting> onCreateSetting;
+
         public static Action<GenericMenu> onDependenciesContextDraw;
 
         public static Action<string> onDependenciesFindItem;
