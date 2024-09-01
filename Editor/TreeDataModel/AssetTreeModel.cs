@@ -247,7 +247,7 @@ namespace AssetDanshari
                     continue;
                 }
 
-                EditorUtility.DisplayProgressBar(AssetDanshariStyle.Get().progressTitle, String.Empty, 0f);
+                EditorUtility.DisplayProgressBar(AssetDanshariStyle.Get().progressTitle, AssetDanshariStyle.Get().progressTime, 0f);
                 var allFiles = Directory.GetFiles(resPath, "*", SearchOption.AllDirectories);
 
                 for (var i = 0; i < allFiles.Length; i++)

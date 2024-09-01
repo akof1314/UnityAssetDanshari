@@ -1,0 +1,18 @@
+{
+    "name": "WuHuan.AssetDanshari.Sample.Editor",
+    "rootNamespace": "",
+    "references": [
+        "GUID:d73ad8be1aba6b14c88097c7bab67ae8"
+    ],
+    "includePlatforms": [
+        "Editor"
+    ],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": true,
+    "defineConstraints": [],
+    "versionDefines": [],
+    "noEngineReferences": false
+}

@@ -46,6 +46,7 @@ namespace AssetDanshari
                             {
 #pragma warning disable CS0618
                                 val = textureImporter.spritePackingTag;
+                                spritePackingDict.Add(info.fileRelativePath, val);
 #pragma warning restore CS0618
                             }
                         }

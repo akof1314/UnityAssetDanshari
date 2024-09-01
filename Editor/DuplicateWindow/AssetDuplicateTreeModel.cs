@@ -147,7 +147,7 @@ namespace AssetDanshari
 
                             Array.Clear(buffer, 0, kBufferSize);
 
-                            int len = stream.Read(buffer);
+                            int len = stream.Read(buffer, 0, kBufferSize);
 
                             var hash = Hash128.Compute(buffer, 0, len);
 
