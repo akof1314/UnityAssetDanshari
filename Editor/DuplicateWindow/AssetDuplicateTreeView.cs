@@ -26,7 +26,7 @@ namespace AssetDanshari
                 return;
             }
 
-            AssetDuplicateTreeModel.FileMd5Info md5Info = info.bindObj as AssetDuplicateTreeModel.FileMd5Info;
+            AssetDuplicateTreeModel.FileSimpleInfo simpleInfo = info.bindObj as AssetDuplicateTreeModel.FileSimpleInfo;
             switch (column)
             {
                 case 0:
@@ -36,10 +36,10 @@ namespace AssetDanshari
                     DefaultGUI.Label(cellRect, info.fileRelativePath, args.selected, args.focused);
                     break;
                 case 2:
-                    DefaultGUI.Label(cellRect, md5Info.fileLength, args.selected, args.focused);
+                    DefaultGUI.Label(cellRect, simpleInfo.fileLength, args.selected, args.focused);
                     break;
                 case 3:
-                    DefaultGUI.Label(cellRect, md5Info.fileTime, args.selected, args.focused);
+                    DefaultGUI.Label(cellRect, simpleInfo.fileTime, args.selected, args.focused);
                     break;
             }
         }

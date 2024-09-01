@@ -2,7 +2,6 @@
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using System.Security.Cryptography;
 using System.Text;
 using UnityEditor;
 using UnityEngine;
@@ -11,13 +10,33 @@ namespace AssetDanshari
 {
     public class AssetDuplicateTreeModel : AssetTreeModel
     {
-        public class FileMd5Info
+        public class FileSimpleInfo
         {
-            public string filePath;
-            public string fileLength;
-            public string fileTime;
+            public FileInfo fileInfo;
             public long fileSize;
-            public string md5;
+            public string filePath;
+
+            /// <summary>
+            /// 界面用文件大小
+            /// </summary>
+            public string fileLength;
+
+            /// <summary>
+            /// 创建时间
+            /// </summary>
+            public string fileTime;
+        }
+
+        private class DuplicateFileGroup
+        {
+            public long size { get; }
+            public List<FileSimpleInfo> files { get; }
+
+            public DuplicateFileGroup(long fileSize, List<FileSimpleInfo> fileList)
+            {
+                size = fileSize;
+                files = fileList;
+            }
         }
 
         public override void SetDataPaths(string refPathStr, string pathStr, string commonPathStr, string grepPath)
@@ -26,23 +45,23 @@ namespace AssetDanshari
             var style = AssetDanshariStyle.Get();
 
             var resFileList = GetResFileList();
-            var fileList = GetFileMd5Infos(resFileList);
-            if (fileList == null || fileList.Count == 0)
+            var duplicateFileGroups = GetDuplicateFileGroupInfo(resFileList);
+            if (duplicateFileGroups == null || duplicateFileGroups.Count == 0)
             {
+                EditorUtility.ClearProgressBar();
                 return;
             }
 
             var rootInfo = new AssetInfo(GetAutoId(), String.Empty, String.Empty);
-            var groups = fileList.GroupBy(info => info.md5).Where(g => g.Count() > 1);
-            foreach (var group in groups)
+            foreach (var group in duplicateFileGroups)
             {
-                AssetInfo dirInfo = new AssetInfo(GetAutoId(), String.Empty, String.Format(style.duplicateGroup, group.Count()));
+                AssetInfo dirInfo = new AssetInfo(GetAutoId(), String.Empty, String.Format(style.duplicateGroup, group.files.Count));
                 dirInfo.isExtra = true;
                 rootInfo.AddChild(dirInfo);
 
-                foreach (var member in group)
+                foreach (var member in group.files)
                 {
-                    dirInfo.AddChild(GetAssetInfoByFileMd5Info(member));
+                    dirInfo.AddChild(GetAssetInfoByFileInfo(member));
                 }
             }
 
@@ -53,52 +72,113 @@ namespace AssetDanshari
             EditorUtility.ClearProgressBar();
         }
 
-        private List<FileMd5Info> GetFileMd5Infos(List<string> fileArray)
-        {
-            var style = AssetDanshariStyle.Get();
-            var fileList = new List<FileMd5Info>();
+        private const int kBufferSize = 1 * 1024 * 1024;
 
-            for (int i = 0; i < fileArray.Count;)
+        private List<DuplicateFileGroup> GetDuplicateFileGroupInfo(List<string> fileArray)
+        {
+            List<DuplicateFileGroup> duplicateFileGroups = new List<DuplicateFileGroup>();
+
+            var fileList = new List<FileSimpleInfo>();
+
+            foreach (var file in fileArray)
             {
-                string file = fileArray[i];
-                if (string.IsNullOrEmpty(file))
+                // 大小为0的不考虑重复
+                FileInfo fileInfo = new FileInfo(file);
+                if (fileInfo.Length > 0)
                 {
-                    i++;
-                    continue;
-                }
-                EditorUtility.DisplayProgressBar(style.progressTitle, file, i * 1f / fileArray.Count);
-                try
-                {
-                    using (var md5 = MD5.Create())
+                    FileSimpleInfo info = new FileSimpleInfo
                     {
-                        FileInfo fileInfo = new FileInfo(file);
-                        using (var stream = File.OpenRead(fileInfo.FullName))
+                        fileSize = fileInfo.Length,
+                        fileInfo = fileInfo
+                    };
+                    fileList.Add(info);
+                }
+            }
+
+            if (fileList.Count == 0)
+            {
+                return duplicateFileGroups;
+            }
+
+            // https://github.com/cemahseri/Duplica
+            var groups = fileList.GroupBy(info => info.fileSize).Where(g => g.Count() > 1);
+            foreach (var group in groups)
+            {
+                DuplicateFileGroup duplicateFileGroup = new DuplicateFileGroup(group.Key, new List<FileSimpleInfo>());
+                var duplicateFiles = duplicateFileGroup.files;
+                duplicateFileGroups.Add(duplicateFileGroup);
+
+                foreach (var member in group)
+                {
+                    duplicateFiles.Add(member);
+                }
+            }
+
+            var buffer = new byte[kBufferSize];
+            for (var dupIndex = 0; dupIndex < duplicateFileGroups.Count; dupIndex++)
+            {
+                var duplicateFileGroup = duplicateFileGroups[dupIndex];
+                AssetDanshariUtility.DisplayThreadProgressBar(duplicateFileGroups.Count, dupIndex);
+
+                var numberOfChunks = duplicateFileGroup.size / kBufferSize;
+
+                for (long chunk = 0; chunk <= numberOfChunks; chunk++)
+                {
+                    var hashes = new Dictionary<Hash128, List<FileSimpleInfo>>();
+
+                    foreach (var fileSimpleInfo in duplicateFileGroup.files)
+                    {
+                        fileSimpleInfo.filePath = fileSimpleInfo.fileInfo.FullName;
+
+                        using (FileStream stream = new FileStream(fileSimpleInfo.filePath, FileMode.Open,
+                                   FileAccess.Read, FileShare.Read, kBufferSize, FileOptions.SequentialScan))
                         {
-                            FileMd5Info info = new FileMd5Info();
-                            info.filePath = fileInfo.FullName;
-                            info.fileSize = fileInfo.Length;
-                            info.fileTime = fileInfo.CreationTime.ToString("yyyy-MM-dd HH:mm:ss");
-                            info.md5 = BitConverter.ToString(md5.ComputeHash(stream)).ToLower();
-                            fileList.Add(info);
+                            if (!stream.CanRead)
+                            {
+                                continue;
+                            }
+
+                            if (!stream.CanSeek)
+                            {
+                                continue;
+                            }
+
+                            stream.Seek(chunk * kBufferSize, SeekOrigin.Begin);
+
+                            Array.Clear(buffer, 0, kBufferSize);
+
+                            int len = stream.Read(buffer);
+
+                            var hash = Hash128.Compute(buffer, 0, len);
+
+                            if (!hashes.ContainsKey(hash))
+                            {
+                                hashes[hash] = new List<FileSimpleInfo>();
+                            }
+
+                            hashes[hash].Add(fileSimpleInfo);
                         }
                     }
 
-                    i++;
-                }
-                catch (Exception e)
-                {
-                    if (!EditorUtility.DisplayDialog(style.errorTitle, file + "\n" + e.Message,
-                        style.continueStr, style.cancelStr))
+                    foreach (var fileSimpleInfo in hashes.Values.Where(f => f.Count == 1).SelectMany(a => a))
                     {
-                        EditorUtility.ClearProgressBar();
-                        return null;
+                        duplicateFileGroup.files.Remove(fileSimpleInfo);
                     }
                 }
             }
-            return fileList;
+
+            for (int i = duplicateFileGroups.Count - 1; i >= 0; i--)
+            {
+                if (duplicateFileGroups[i].files.Count <= 1)
+                {
+                    duplicateFileGroups.RemoveAt(i);
+                }
+            }
+
+            return duplicateFileGroups;
         }
 
-        private AssetInfo GetAssetInfoByFileMd5Info(FileMd5Info fileInfo)
+        private AssetInfo GetAssetInfoByFileInfo(FileSimpleInfo fileInfo)
         {
             AssetInfo info = GenAssetInfo(FullPathToRelative(fileInfo.filePath));
             info.bindObj = fileInfo;
@@ -115,6 +195,9 @@ namespace AssetDanshari
             {
                 fileInfo.fileLength = string.Format("{0:F} B", fileInfo.fileSize);
             }
+
+            fileInfo.fileTime = fileInfo.fileInfo.CreationTime.ToString("yyyy-MM-dd HH:mm:ss");
+            fileInfo.fileInfo = null;
 
             return info;
         }
@@ -172,8 +255,24 @@ namespace AssetDanshari
         /// <param name="filePaths"></param>
         public int AddManualData(string[] filePaths)
         {
-            var fileList = GetFileMd5Infos(filePaths.ToList());
-            if (fileList == null || fileList.Count < 2 || !HasData())
+            var fileList = new List<FileSimpleInfo>();
+
+            foreach (var file in filePaths)
+            {
+                if (!string.IsNullOrEmpty(file))
+                {
+                    FileInfo fileInfo = new FileInfo(file);
+                    FileSimpleInfo info = new FileSimpleInfo
+                    {
+                        fileSize = fileInfo.Length,
+                        filePath = fileInfo.FullName,
+                        fileInfo = fileInfo
+                    };
+                    fileList.Add(info);
+                }
+            }
+
+            if (fileList.Count < 2 || !HasData())
             {
                 EditorUtility.ClearProgressBar();
                 return 0;
@@ -186,7 +285,7 @@ namespace AssetDanshari
 
             foreach (var member in fileList)
             {
-                dirInfo.AddChild(GetAssetInfoByFileMd5Info(member));
+                dirInfo.AddChild(GetAssetInfoByFileInfo(member));
             }
             EditorUtility.ClearProgressBar();
             return dirInfo.children[dirInfo.children.Count - 1].id;
@@ -216,9 +315,9 @@ namespace AssetDanshari
                     sb.AppendFormat("\"{0}\",", info.displayName);
                     sb.AppendFormat("\"{0}\",", info.fileRelativePath);
 
-                    FileMd5Info md5Info = info.bindObj as FileMd5Info;
-                    sb.AppendFormat("\"{0}\",", md5Info.fileLength);
-                    sb.AppendFormat("\"{0}\"\n", md5Info.fileTime);
+                    FileSimpleInfo simpleInfo = info.bindObj as FileSimpleInfo;
+                    sb.AppendFormat("\"{0}\",", simpleInfo.fileLength);
+                    sb.AppendFormat("\"{0}\"\n", simpleInfo.fileTime);
                 }
             }
 

@@ -172,12 +172,14 @@ namespace AssetDanshari
         {
             EditorApplication.delayCall += () =>
             {
+                RemoveNotification();
                 m_AssetTreeModel.SetDataPaths(refPaths, paths, commonPaths, grepPath);
                 if (m_AssetTreeModel.HasData())
                 {
                     m_AssetTreeView.Reload();
                     m_AssetTreeView.ExpandAllExceptLast();
                 }
+                Repaint();
             };
         }
     }
