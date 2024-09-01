@@ -149,11 +149,15 @@ namespace AssetDanshari
 
                             int len = stream.Read(buffer, 0, kBufferSize);
 
+#if UNITY_2020_1_OR_NEWER
                             var hash = Hash128.Compute(buffer, 0, len);
+#else
+                            var hash = Hash128.Compute(Convert.ToBase64String(buffer, 0, len));
+#endif
 
                             if (!hashes.ContainsKey(hash))
                             {
-                                hashes[hash] = new List<FileSimpleInfo>();
+                                hashes.Add(hash, new List<FileSimpleInfo>());
                             }
 
                             hashes[hash].Add(fileSimpleInfo);

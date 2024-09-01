@@ -431,19 +431,23 @@ namespace AssetDanshari
                 try
                 {
                     string patternsFile = "Library/AssetDansharipPatterns.txt";
+#if UNITY_2020_1_OR_NEWER
                     File.WriteAllLines(patternsFile, m_Patterns);
+#else
+                    File.WriteAllLines(patternsFile, m_Patterns.ToArray());
+#endif
 
                     ProcessStartInfo startInfo = new ProcessStartInfo(m_GrepPath)
                     {
                         UseShellExecute = false,
                         CreateNoWindow = true,
                         RedirectStandardOutput = true,
-                        Arguments = $"-f {patternsFile} -o -N -F --no-config --no-ignore"
+                        Arguments = string.Format("-f {0} -o -N -F --no-config --no-ignore", patternsFile)
                     };
 
                     foreach (var path in m_SearchList)
                     {
-                        startInfo.Arguments += $" \"{path}\"";
+                        startInfo.Arguments += string.Format(" \"{0}\"", path);
                     }
 
                     Dictionary<string, HashSet<string>> matchDict = new Dictionary<string, HashSet<string>>();
@@ -468,7 +472,8 @@ namespace AssetDanshari
                                             var matchFile = PathToStandardized(line.Substring(0, pos));
                                             var matchGuid = line.Substring(pos + 1);
 
-                                            if (!matchDict.TryGetValue(matchFile, out var matchSet))
+                                            HashSet<string> matchSet;
+                                            if (!matchDict.TryGetValue(matchFile, out matchSet))
                                             {
                                                 matchSet = new HashSet<string>();
                                                 matchDict.Add(matchFile, matchSet);
@@ -489,7 +494,8 @@ namespace AssetDanshari
                     // 映射到原数组
                     for (int i = 0; i < m_FileList.Count; i++)
                     {
-                        if (matchDict.TryGetValue(m_FileList[i], out var matchSet))
+                        HashSet<string> matchSet;
+                        if (matchDict.TryGetValue(m_FileList[i], out matchSet))
                         {
                             // 搜索
                             if (string.IsNullOrEmpty(m_ReplaceStr))
@@ -604,7 +610,7 @@ namespace AssetDanshari
 
             int timeout = 600000;  // 10 分钟超时
 
-            if (string.IsNullOrWhiteSpace(grepFilePath))
+            if (string.IsNullOrEmpty(grepFilePath))
             {
                 for (var i = 0; i < fileList.Count; i++)
                 {
