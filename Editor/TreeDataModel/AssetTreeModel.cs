@@ -437,7 +437,7 @@ namespace AssetDanshari
                     File.WriteAllLines(patternsFile, m_Patterns.ToArray());
 #endif
 
-                    ProcessStartInfo startInfo = new ProcessStartInfo(m_GrepPath)
+                    ProcessStartInfo startInfo = new ProcessStartInfo(new FileInfo(m_GrepPath).FullName)
                     {
                         UseShellExecute = false,
                         CreateNoWindow = true,
