@@ -3,7 +3,7 @@
   "displayName": "Asset Danshari",
   "version": "1.0.0",
   "documentationUrl": "https://github.com/akof1314/UnityAssetDanshari",
-  "description": "Asset Danshar, asset cleaning for duplicate and referenced searches.\n资源断舍离，资源清理重复以及引用被引用查找。",
+  "description": "Asset Danshar, a Unity merge duplicated assets and find reference tool.\n资源断舍离，资源清理重复以及引用被引用查找。",
   "category": "Editor",
   "author": {
     "name": "Wuhuan",

@@ -8,7 +8,7 @@ UnityAssetDanshari 是一个 Unity 资源清理重复以及引用被引用查找
 
 ## 首次使用
 
-提前准备 ripgrep 的二进制文件(https://github.com/BurntSushi/ripgrep/releases)， 也可以直接使用示例工程自带的 Windows 版二进制文件。
+提前准备 ripgrep 的二进制文件[https://github.com/BurntSushi/ripgrep/releases](https://github.com/BurntSushi/ripgrep/releases)， 也可以直接使用示例工程自带的 Windows 版二进制文件。
 
 ![](./Images/MainWindows.png)
 
@@ -72,7 +72,7 @@ private static AssetDanshariSetting OnCreateSetting()
 
 ## 检查重复
 
-对资源文件进行 MD5 检查重复，再对重复的资源进行操作。
+对资源文件进行逐块 Hash128 检查重复，再对重复的资源进行操作。
 
 ![](https://img-blog.csdnimg.cn/20181110160230435.png)
 
@@ -81,8 +81,15 @@ private static AssetDanshariSetting OnCreateSetting()
 
 【仅使用此资源，其余删除】菜单项功能，将会删除其余重复的资源，并且将所有引用到这些删除资源的地方都改成引用保留的那一个。
 
-当美术对同一资源进行切图两次，会导致文件 MD5 值不一样，就无法被工具所检测到。出现这种情况的时候，肉眼发现到两个资源其实是一样的，可以在这个窗口右上角点击【手动添加】按钮。
+当美术对同一资源进行切图两次，会导致文件 Hash128 值不一样，就无法被工具所检测到。出现这种情况的时候，肉眼发现到两个资源其实是一样的，可以在这个窗口右上角点击【手动添加】按钮。
 
 ![](https://img-blog.csdnimg.cn/20181110160308811.png)
 
 手动进行添加资源路径，将资源文件拖动到文本框，再点击【确定】。就会自动定位到新增的数据，接着就可以按处理重复资源一样进行操作。
+
+## 扩展被引用来源
+
+![](./Images/CustomDependSource.png)
+
+资源不止被另外的资源直接引用，还可能配置在表里、代码里进行动态使用，在这种情况下，可以绑定`onDependenciesLoadDataMore`事件，对传入的资源路径进行判别处理，参照示例工程代码。
+
