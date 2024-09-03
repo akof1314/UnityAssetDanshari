@@ -93,3 +93,51 @@ private static AssetDanshariSetting OnCreateSetting()
 
 资源不止被另外的资源直接引用，还可能配置在表里、代码里进行动态使用，在这种情况下，可以绑定`onDependenciesLoadDataMore`事件，对传入的资源路径进行判别处理，参照示例工程代码。
 
+## API 调用
+
+每次需要拖曳文件/目录到窗口可能会觉得不方便，或者想要集成到自己的工具里，可以使用公开的 API，调用三个不同的窗口。
+
+```csharp
+/// <summary>
+/// 显示引用查找窗口
+/// </summary>
+/// <param name="refPaths">引用的文件、目录集合</param>
+/// <param name="resPaths">资源的文件、目录集合</param>
+/// <param name="commonPaths">公共资源目录集合</param>
+public static void DisplayReferenceWindow(string refPaths, string resPaths, string commonPaths = "")
+
+/// <summary>
+/// 显示被引用查找窗口
+/// </summary>
+public static void DisplayDependenciesWindow(string refPaths, string resPaths, string commonPaths = "")
+
+/// <summary>
+/// 显示重复资源检查窗口
+/// </summary>
+public static void DisplayDuplicateWindow(string refPaths, string resPaths, string commonPaths = "")
+```
+
+![](./Images/ApiDemo.gif)
+
+示例工程举例实现右键资源文件来查看被引用情况。
+
+```csharp
+[MenuItem("Assets/查找该资源的被引用")]
+private static void FindReferenceAll()
+{
+    string[] paths = new string[Selection.objects.Length];
+    for (var i = 0; i < Selection.objects.Length; i++)
+    {
+        var o = Selection.objects[i];
+        paths[i] = AssetDatabase.GetAssetPath(o);
+    }
+
+    AssetDanshariWindow.DisplayDependenciesWindow(
+        AssetDanshariUtility.PathArrayToStr(new []{"Assets"}),
+        AssetDanshariUtility.PathArrayToStr(paths));
+}
+```
+
+## 当前限制
+
+二进制配置文件，如：Lighting data, Terrain data 之类，无法查找其引用资源关系。

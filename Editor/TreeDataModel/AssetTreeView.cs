@@ -207,6 +207,49 @@ namespace AssetDanshari
         }
 
         /// <summary>
+        /// 展开全部，智能扩展最后一层
+        /// </summary>
+        public void ExpandAllSmartLast()
+        {
+            ExpandAll();
+
+            // 仅当只存在一项时才全展开，为了方便单文件查找的情况
+            TreeViewItem onlyOneItem = null;
+            var stack = new Stack<TreeViewItem>();
+            stack.Push(rootItem);
+
+            while (stack.Count > 0)
+            {
+                var current = stack.Pop();
+
+                if (current.children != null && current.children.Count > 0)
+                {
+                    for (int i = 0; i < current.children.Count; i++)
+                    {
+                        stack.Push(current.children[i]);
+                    }
+                }
+                else if (IsExtraItem(current))
+                {
+                    if (onlyOneItem == null)
+                    {
+                        onlyOneItem = current.parent;
+                    }
+                    else if (onlyOneItem != current.parent)
+                    {
+                        onlyOneItem = null;
+                        break;
+                    }
+                }
+            }
+
+            if (onlyOneItem == null)
+            {
+                ExpandAllExceptLast();
+            }
+        }
+
+        /// <summary>
         /// 展开全部，除了最后一层
         /// </summary>
         public void ExpandAllExceptLast()
@@ -220,7 +263,7 @@ namespace AssetDanshari
             SetExpandedAtLast(rootItem, false);
         }
 
-        public bool SetExpandedAtLast(TreeViewItem item, bool expanded)
+        private bool SetExpandedAtLast(TreeViewItem item, bool expanded)
         {
             if (item.hasChildren)
             {
@@ -239,6 +282,21 @@ namespace AssetDanshari
             }
 
             return false;
+        }
+
+        private void GetExtraItemCount(TreeViewItem item, ref int count)
+        {
+            if (item.hasChildren)
+            {
+                foreach (var child in item.children)
+                {
+                    GetExtraItemCount(child,  ref count);
+                }
+            }
+            else if (IsExtraItem(item))
+            {
+                count++;
+            }
         }
 
         public bool IsExtraItem(int id)

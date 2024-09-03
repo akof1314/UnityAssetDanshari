@@ -10,7 +10,7 @@ namespace AssetDanshari
 
         public static Action<GenericMenu> onDependenciesContextDraw;
 
-        public static Action<string> onDependenciesFindItem;
+        internal static Action<string> onDependenciesFindItem;
 
         public static Action<string, List<AssetTreeModel.AssetInfo>, AssetTreeModel> onDependenciesLoadDataMore;
     }

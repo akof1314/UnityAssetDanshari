@@ -34,6 +34,16 @@ namespace AssetDanshari
             return ext.EndsWith(".meta");
         }
 
+        public static string GetPathFromTextMetaFilePath(string metaFile)
+        {
+            return metaFile.Substring(0, metaFile.Length - 5);
+        }
+
+        public static string GetTextMetaFilePathFromPath(string file)
+        {
+            return file + ".meta";
+        }
+
         public static string GetSaveFilePath(string key)
         {
             string path = EditorPrefs.GetString("RecentSaveFilePath" + key, Application.dataPath + key + ".csv");

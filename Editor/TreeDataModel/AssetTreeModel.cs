@@ -214,7 +214,9 @@ namespace AssetDanshari
                 for (var i = 0; i < allFiles.Length; i++)
                 {
                     var file = allFiles[i];
-                    if (!AssetDanshariUtility.IsPlainTextExt(file))
+                    // 不止文本资源，二进制的meta文件也可能引用资源，比如fbx.
+                    // 这里为了界面显示，只过滤掉meta文件，但实际搜索还是需要搜索
+                    if (AssetDanshariUtility.IsMetaExt(file))
                     {
                         continue;
                     }
@@ -276,6 +278,24 @@ namespace AssetDanshari
             foreach (var file in fileList)
             {
                 guidList.Add(AssetDatabase.AssetPathToGUID(file));
+            }
+
+            return guidList;
+        }
+
+        /// <summary>
+        /// 获取文件列表的GUID
+        /// </summary>
+        /// <param name="fileList"></param>
+        protected Dictionary<string, string> GetGuidMapFromFileList(List<string> fileList)
+        {
+            Dictionary<string, string> guidList = new Dictionary<string, string>();
+            foreach (var file in fileList)
+            {
+                if (!guidList.ContainsKey(file))
+                {
+                    guidList.Add(file, AssetDatabase.AssetPathToGUID(file));
+                }
             }
 
             return guidList;
@@ -412,15 +432,18 @@ namespace AssetDanshari
             private List<string> m_Patterns;
             private string m_ReplaceStr;
             private List<string> m_FileList;
+            private Dictionary<string, string> m_FileGuidMap;
             private bool[][] m_SearchRetList;
 
-            public JobGrepTextSearchReplace(string grepFilePath, string[] searchList, List<string> patterns, string replaceStr, List<string> fileList, bool[][] searchRetList)
+            public JobGrepTextSearchReplace(string grepFilePath, string[] searchList, List<string> patterns, string replaceStr,
+                List<string> fileList, Dictionary<string, string> fileGuidMap, bool[][] searchRetList)
             {
                 m_GrepPath = grepFilePath;
                 m_SearchList = searchList;
                 m_Patterns = patterns;
                 m_ReplaceStr = replaceStr;
                 m_FileList = fileList;
+                m_FileGuidMap = fileGuidMap;
                 m_SearchRetList = searchRetList;
                 doneEvent = new ManualResetEvent(false);
                 exception = String.Empty;
@@ -471,6 +494,22 @@ namespace AssetDanshari
                                         {
                                             var matchFile = PathToStandardized(line.Substring(0, pos));
                                             var matchGuid = line.Substring(pos + 1);
+
+                                            // 如果是meta引用了，那么就认为是原始引用，但需排除同个文件
+                                            if (AssetDanshariUtility.IsMetaExt(matchFile))
+                                            {
+                                                matchFile = AssetDanshariUtility.GetPathFromTextMetaFilePath(matchFile);
+
+                                                // 如果是meta就不要计算引用自身的情况
+                                                string refGuid;
+                                                if (m_FileGuidMap.TryGetValue(matchFile, out refGuid))
+                                                {
+                                                    if (refGuid == matchGuid)
+                                                    {
+                                                        continue;
+                                                    }
+                                                }
+                                            }
 
                                             HashSet<string> matchSet;
                                             if (!matchDict.TryGetValue(matchFile, out matchSet))
@@ -543,13 +582,15 @@ namespace AssetDanshari
             private List<string> m_Patterns;
             private string m_ReplaceStr;
             private bool[] m_SearchRet;
+            private Dictionary<string, string> m_FileGuidMap;
 
-            public JobFileTextSearchReplace(string path, List<string> patterns, string replaceStr, bool[] searchRet)
+            public JobFileTextSearchReplace(string path, List<string> patterns, string replaceStr, Dictionary<string, string> fileGuidMap, bool[] searchRet)
             {
                 m_Path = path;
                 m_Patterns = patterns;
                 m_ReplaceStr = replaceStr;
                 m_SearchRet = searchRet;
+                m_FileGuidMap = fileGuidMap;
                 doneEvent = new ManualResetEvent(false);
             }
 
@@ -584,6 +625,43 @@ namespace AssetDanshari
                             File.WriteAllText(m_Path, text2);
                         }
                     }
+
+                    // 处理其对应的meta文件
+                    string refGuid;
+                    if (m_FileGuidMap.TryGetValue(m_Path, out refGuid))
+                    {
+                        string metaPath = AssetDanshariUtility.GetTextMetaFilePathFromPath(m_Path);
+                        text = File.ReadAllText(metaPath);
+
+                        // 搜索
+                        if (string.IsNullOrEmpty(m_ReplaceStr))
+                        {
+                            for (int i = 0; i < m_Patterns.Count; i++)
+                            {
+                                if (refGuid != m_Patterns[i] && text.Contains(m_Patterns[i]))
+                                {
+                                    m_SearchRet[i] = true;
+                                }
+                            }
+                        }
+                        else
+                        {
+                            StringBuilder sb = new StringBuilder(text, text.Length * 2);
+                            foreach (var pattern in m_Patterns)
+                            {
+                                if (refGuid != pattern)
+                                {
+                                    sb.Replace(pattern, m_ReplaceStr);
+                                }
+                            }
+
+                            string text2 = sb.ToString();
+                            if (!string.Equals(text, text2))
+                            {
+                                File.WriteAllText(metaPath, text2);
+                            }
+                        }
+                    }
                 }
                 catch (Exception ex)
                 {
@@ -594,7 +672,18 @@ namespace AssetDanshari
             }
         }
 
-        protected void ThreadDoFilesTextSearchReplace(string grepFilePath, string[] searchList, List<string> fileList, List<string> patterns, string replaceStr, bool[][] searchRetList)
+        /// <summary>
+        /// 线程文本搜索
+        /// </summary>
+        /// <param name="grepFilePath">grep执行文件的路径</param>
+        /// <param name="searchList">引用目录的数组</param>
+        /// <param name="fileList">引用目录的文件列表</param>
+        /// <param name="fileGuidMap">引用目录的文件列表的GUID字典，方便排除自身</param>
+        /// <param name="patterns">文本搜索数组，这里都是GUID数组</param>
+        /// <param name="replaceStr">文本替换字符串</param>
+        /// <param name="searchRetList">二维数组，记录搜索的结果</param>
+        protected void ThreadDoFilesTextSearchReplace(string grepFilePath, string[] searchList, List<string> fileList,
+            Dictionary<string, string> fileGuidMap, List<string> patterns, string replaceStr, bool[][] searchRetList)
         {
             if (fileList.Count == 0)
             {
@@ -614,7 +703,7 @@ namespace AssetDanshari
             {
                 for (var i = 0; i < fileList.Count; i++)
                 {
-                    JobFileTextSearchReplace job = new JobFileTextSearchReplace(fileList[i], patterns, replaceStr, searchRetList[i]);
+                    JobFileTextSearchReplace job = new JobFileTextSearchReplace(fileList[i], patterns, replaceStr, fileGuidMap, searchRetList[i]);
                     jobList.Add(job);
                     eventList.Add(job.doneEvent);
                     ThreadPool.QueueUserWorkItem(job.ThreadPoolCallback);
@@ -629,7 +718,7 @@ namespace AssetDanshari
             }
             else
             {
-                JobGrepTextSearchReplace job = new JobGrepTextSearchReplace(grepFilePath, searchList, patterns, replaceStr, fileList, searchRetList);
+                JobGrepTextSearchReplace job = new JobGrepTextSearchReplace(grepFilePath, searchList, patterns, replaceStr, fileList, fileGuidMap, searchRetList);
                 jobList.Add(job);
                 eventList.Add(job.doneEvent);
                 ThreadPool.QueueUserWorkItem(job.ThreadPoolCallback);

@@ -177,7 +177,7 @@ namespace AssetDanshari
                 if (m_AssetTreeModel.HasData())
                 {
                     m_AssetTreeView.Reload();
-                    m_AssetTreeView.ExpandAllExceptLast();
+                    m_AssetTreeView.ExpandAllSmartLast();
                 }
                 Repaint();
             };

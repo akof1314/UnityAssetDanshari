@@ -16,9 +16,10 @@ namespace AssetDanshari
             var resFileList = GetResFileList();
             var guidList = GetGuidFromFileList(resFileList);
             var fileList = GetRefFileList();
+            var refGuidMap = GetGuidMapFromFileList(fileList);
             var searchRetList = GetSearchResultList(fileList.Count, guidList.Count);
 
-            ThreadDoFilesTextSearchReplace(grepPath, refPaths, fileList, guidList, String.Empty, searchRetList);
+            ThreadDoFilesTextSearchReplace(grepPath, refPaths, fileList, refGuidMap, guidList, String.Empty, searchRetList);
             var rootInfo = DirToAssetInfoTree(refPaths);
             var refInfos = FileListToAssetInfos(fileList);
 
